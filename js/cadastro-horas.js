@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: formData,
             });
