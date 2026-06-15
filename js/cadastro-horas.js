@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true'}
             });
 
             if (!response.ok) throw new Error('Falha ao carregar categorias.');
