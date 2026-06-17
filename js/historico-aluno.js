@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const response = await fetch(`${API_BASE_URL}/api/certificados`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
             }
         });
 
