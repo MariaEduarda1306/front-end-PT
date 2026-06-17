@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchProgress() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios/${loggedInUser.id}/progresso`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) return;
 
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: formData
                 });
 
@@ -268,7 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 
                         'Authorization': `Bearer ${authToken}`, 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json' 
+                        'Accept': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
                     },
                     body: JSON.stringify({
                         current_password: current.value,
@@ -300,8 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userType === 'COORDENADOR') {
             try {
                 const [p, a] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/certificados?status=ENTREGUE`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
-                    fetch(`${API_BASE_URL}/api/certificados?status=APROVADO`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+                    fetch(`${API_BASE_URL}/api/certificados?status=ENTREGUE`, { headers: { 'Authorization': `Bearer ${authToken}`, 'ngrok-skip-browser-warning': 'true' } }),
+                    fetch(`${API_BASE_URL}/api/certificados?status=APROVADO`, { headers: { 'Authorization': `Bearer ${authToken}`, 'ngrok-skip-browser-warning': 'true' } })
                 ]);
                 const dp = await p.json();
                 const da = await a.json();
@@ -314,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
         else if (userType === 'SECRETARIA') {
             try {
-                const r = await fetch(`${API_BASE_URL}/api/usuarios`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                const r = await fetch(`${API_BASE_URL}/api/usuarios`, { headers: { 'Authorization': `Bearer ${authToken}`, 'ngrok-skip-browser-warning': 'true' } });
                 const d = await r.json();
                 const l = Array.isArray(d) ? d : (d.data || []);
                 if (document.getElementById('summary-alunos')) document.getElementById('summary-alunos').textContent = l.filter(u => u.tipo === 'ALUNO').length;
