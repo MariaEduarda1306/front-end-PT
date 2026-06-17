@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Carregando usuários...</td></tr>';
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
 
             if (!response.ok) throw new Error('Falha ao carregar usuários.');
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify(payload)
             });
 
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios/${userIdToDelete}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) throw new Error('Falha ao remover usuário.');
 
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateCourseSelects() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/cursos`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) return;
             const result = await response.json();
