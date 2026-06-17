@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateCourseFilter() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/cursos`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) return; 
             
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/certificados?aluno_id=${studentId}`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) throw new Error('Falha ao carregar o histórico.');
             
