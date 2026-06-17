@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coursesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center">Carregando cursos...</td></tr>';
         try {
             const response = await fetch(`${API_BASE_URL}/api/cursos`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
 
             if (response.ok) {
@@ -129,7 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 
                     'Authorization': `Bearer ${authToken}`, 
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify({ 
                     nome: nameInput.value.trim(), 
@@ -156,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoriesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center">Carregando...</td></tr>';
         try {
             const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (response.ok) {
                 const result = await response.json();
@@ -227,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 
                     'Authorization': `Bearer ${authToken}`, 
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify({ nome: nameInput.value.trim() })
             });
@@ -266,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/${endpoint}/${deleteTargetId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
 
             if (response.ok) {
@@ -287,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadIntegrations() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/configuracoes`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (response.ok) {
                 const config = await response.json();
@@ -308,7 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 
                     'Authorization': `Bearer ${authToken}`, 
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json' 
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify({
                     api_url: apiUrlInput.value,
@@ -341,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // Passo 1: Busca no legado
                 const respLegado = await fetch(externalUrl, {
-                    headers: { 'x-api-key': externalKey, 'Content-Type': 'application/json' }
+                    headers: { 'x-api-key': externalKey, 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (!respLegado.ok) throw new Error('Falha ao conectar com sistema legado.');
                 const dadosLegado = await respLegado.json();
@@ -352,7 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 
                         'Authorization': `Bearer ${authToken}`, 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json' 
+                        'Accept': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
                     },
                     body: JSON.stringify(dadosLegado)
                 });
@@ -378,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/certificados/export`, {
-                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (!response.ok) throw new Error('Falha na exportação.');
 
