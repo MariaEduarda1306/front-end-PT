@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCategorias() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (response.ok) {
                 const result = await response.json();
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Busca apenas alunos (o Coordenador vê apenas o seu curso via Backend)
             const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Busca certificados para processar a contagem de solicitações pendentes/enviadas
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
-                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 
                 if (certResponse.ok) {
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Busca o progresso do aluno via API
         try {
             const progResponse = await fetch(`${API_BASE_URL}/api/usuarios/${studentId}/progresso`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (progResponse.ok) {
                 const progressData = await progResponse.json();
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Busca os certificados específicos do aluno
         try {
             const response = await fetch(`${API_BASE_URL}/api/certificados?aluno_id=${studentId}`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) throw new Error('Falha ao carregar o histórico.');
             
@@ -314,7 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify(payload)
             });
