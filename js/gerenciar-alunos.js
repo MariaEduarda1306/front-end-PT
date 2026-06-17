@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
@@ -215,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify(data)
             });
 
@@ -244,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios/${studentIdToDelete}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${authToken}` }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) throw new Error('Erro ao deletar');
             
@@ -262,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateCourseSelects() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/cursos`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) return;
             const result = await response.json();
