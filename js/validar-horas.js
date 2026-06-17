@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCategorias() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (response.ok) {
                 const result = await response.json();
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Busca certificados com status ENTREGUE (o backend já filtra pelo curso do coordenador)
             const response = await fetch(`${API_BASE_URL}/api/certificados?status=ENTREGUE`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             
             if (!response.ok) throw new Error('Falha ao buscar pendências.');
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Busca o progresso atual do aluno
         try {
             const progResponse = await fetch(`${API_BASE_URL}/api/usuarios/${studentId}/progresso`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (progResponse.ok) {
                 const progressData = await progResponse.json();
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Busca certificados pendentes do aluno específico
         try {
             const response = await fetch(`${API_BASE_URL}/api/certificados?aluno_id=${studentId}&status=ENTREGUE`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json' }
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             if (!response.ok) throw new Error('Falha ao carregar certificados.');
 
@@ -286,7 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify(payload)
             });
