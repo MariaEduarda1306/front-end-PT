@@ -1,0 +1,55 @@
+/* ==========================================================================
+   layout.css: Layout geral, containers e espaçamento.
+   ========================================================================== */
+
+.main-container,
+.dashboard-container,
+.form-container,
+.profile-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.dashboard-container {
+    max-width: 1200px;
+}
+
+.form-container {
+    max-width: 800px;
+}
+
+.profile-container {
+    max-width: 900px;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+}
+
+/* Layout específico da página de login */
+.layout-login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Grid para formulários */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
