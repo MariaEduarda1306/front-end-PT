@@ -20,21 +20,35 @@ if (apiFromUrl) {
     localStorage.setItem('API_BASE_URL', apiFromUrl.replace(/\/$/, ''));
 }
 
-const DEFAULT_API_URL = 'http://localhost:8000';
+const isLocalFrontend =
+    ['localhost', '127.0.0.1', ''].includes(window.location.hostname) ||
+    window.location.protocol === 'file:';
+
+const DEFAULT_API_URL = isLocalFrontend ? 'http://localhost:8000' : '';
 
 let savedApiUrl = localStorage.getItem('API_BASE_URL');
+const savedApiIsLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(savedApiUrl || '');
 
 if (apiFromUrl) {
     savedApiUrl = apiFromUrl.replace(/\/$/, '');
     localStorage.setItem('API_BASE_URL', savedApiUrl);
 }
 
+if (!apiFromUrl && !isLocalFrontend && savedApiIsLocalhost) {
+    savedApiUrl = '';
+    localStorage.removeItem('API_BASE_URL');
+}
+
 if (!savedApiUrl) {
     savedApiUrl = DEFAULT_API_URL;
-    localStorage.setItem('API_BASE_URL', savedApiUrl);
+
+    if (savedApiUrl) {
+        localStorage.setItem('API_BASE_URL', savedApiUrl);
+    }
 }
 
 const API_BASE_URL = savedApiUrl.replace(/\/$/, '');
+const API_CONFIG_HELP = 'Configure a URL publica da API. Exemplo: abra este site com ?api=https://SEU-LINK.ngrok-free.app';
 
 const authToken = localStorage.getItem('authToken');
 const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
