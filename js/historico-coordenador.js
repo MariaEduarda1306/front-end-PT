@@ -58,39 +58,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let categoriasDisponiveis = [];
 
     // =======================================================
-    // 1. CARREGAMENTO DE DADOS INICIAIS
+    // 1. CARREGAMENTO DE DADOS INICIAIS (AGORA COM FILTROS NO BACKEND)
     // =======================================================
-
-    async function fetchCategorias() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
-            });
-            if (response.ok) {
-                const result = await response.json();
-                categoriasDisponiveis = result.data || result;
-            }
-        } catch (error) {
-            console.error("Erro ao carregar categorias:", error);
-        }
-    }
 
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando alunos...</td></tr>';
         
         try {
-            // Busca apenas alunos (o Coordenador vê apenas o seu curso via Backend)
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                fase: document.getElementById('fase').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
             
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
             
             const result = await response.json();
-            allStudentsData = result.data || result;
-            if (!Array.isArray(allStudentsData)) allStudentsData = [];
+            let studentsData = result.data || result;
+            if (!Array.isArray(studentsData)) studentsData = [];
 
-            // Busca certificados para calcular o total de solicitações por aluno
+            // Busca contagem de certificados (mantida)
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
@@ -108,15 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     
-                    allStudentsData = allStudentsData.map(aluno => {
+                    studentsData = studentsData.map(aluno => {
                         aluno.certificados_count = contagemPorAluno[aluno.id] || 0;
                         return aluno;
                     });
                 }
             } catch (e) {
-                console.warn('Não foi possível obter a contagem detalhada', e);
+                console.warn('Não foi possível obter contagem de certificados', e);
             }
 
+            allStudentsData = studentsData; // atualiza cache
             renderStudentsTable();
 
         } catch (error) {
@@ -125,29 +126,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. FILTRAGEM E RENDERIZAÇÃO DA LISTA
+    // 2. RENDERIZAÇÃO (SEM FILTRO CLIENT-SIDE)
     // =======================================================
 
     function renderStudentsTable() {
-        const nomeFilter = document.getElementById('aluno').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('matricula').value.trim();
-        const faseFilter = document.getElementById('fase').value;
-
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            const matchFase = !faseFilter || (String(aluno.fase || '') === String(faseFilter));
-            return matchNome && matchMatricula && matchFase;
-        });
+        // Não precisa mais filtrar aqui — o backend já filtrou
+        const studentsArray = allStudentsData;
 
         studentListTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
+        if (!studentsArray || studentsArray.length === 0) {
+            studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = document.createElement('tr');
             row.className = 'student-row';
             row.style.cursor = 'pointer';
@@ -171,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             studentListTbody.appendChild(row);
         });
     }
-
+    
     // =======================================================
     // 3. VISTA DE DETALHES (HISTÓRICO INDIVIDUAL)
     // =======================================================

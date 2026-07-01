@@ -73,13 +73,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. READ - CARREGAR E RENDERIZAR USUÁRIOS
+    // 3. READ - CARREGAR E RENDERIZAR USUÁRIOS (COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchUsers() {
         usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Carregando usuários...</td></tr>';
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                search: document.getElementById('filtro-nome').value.trim(),
+                cpf: document.getElementById('filtro-cpf').value.replace(/\D/g, ''), 
+                tipo: document.getElementById('filtro-papel').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
 
             if (!response.ok) throw new Error('Falha ao carregar usuários.');
@@ -96,27 +111,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderUsersTable() {
-        const nomeFilter = document.getElementById('filtro-nome').value.toLowerCase().trim();
-        const cpfFilter = document.getElementById('filtro-cpf').value.replace(/\D/g, ''); 
-        const papelFilter = document.getElementById('filtro-papel').value;
+    // =======================================================
+    // 4. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
+    // =======================================================
 
-        const filteredUsers = allUsersData.filter(user => {
-            const userCpf = user.cpf ? user.cpf.replace(/\D/g, '') : '';
-            const matchNome = !nomeFilter || (user.nome && user.nome.toLowerCase().includes(nomeFilter));
-            const matchCpf = !cpfFilter || userCpf.includes(cpfFilter);
-            const matchPapel = !papelFilter || (user.tipo === papelFilter);
-            return matchNome && matchCpf && matchPapel;
-        });
+    function renderUsersTable() {
+        // Backend já filtrou — só renderizamos
+        const usersArray = allUsersData;
 
         usersTbody.innerHTML = '';
 
-        if (filteredUsers.length === 0) {
+        if (usersArray.length === 0) {
             usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum usuário encontrado.</td></tr>';
             return;
         }
 
-        filteredUsers.forEach(user => {
+        usersArray.forEach(user => {
             const row = usersTbody.insertRow();
             row.innerHTML = `
                 <td data-label="Nome">${user.nome}</td>
@@ -134,92 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteBtn = row.querySelector('.btn-delete');
             if (deleteBtn) deleteBtn.addEventListener('click', () => openDeleteModal(user.id, user.nome));
         });
-    }
-
-    // Eventos de Filtro
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); renderUsersTable(); });
-
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('filtro-nome').value = '';
-            document.getElementById('filtro-cpf').value = '';
-            
-            const papelSelectFilter = document.getElementById('filtro-papel');
-            papelSelectFilter.value = '';
-            updateCustomSelectUI(papelSelectFilter, "");
-            renderUsersTable();
-        });
-    }
-
-    // =======================================================
-    // 4. LÓGICA DE CAMPOS CONDICIONAIS E MODAL
-    // =======================================================
-    function toggleConditionalFields() {
-        const papel = papelSelect.value;
-        const isAluno = papel === 'ALUNO';
-        const isCoord = papel === 'COORDENADOR';
-
-        if (cursoGroup) cursoGroup.classList.toggle('hidden', !isAluno && !isCoord);
-        if (faseGroup) faseGroup.classList.toggle('hidden', !isAluno);
-
-        if (!isAluno && !isCoord) toggleError(cursoSelect, false);
-        if (!isAluno) toggleError(faseSelect, false);
-    }
-
-    if (papelSelect) papelSelect.addEventListener('change', toggleConditionalFields);
-
-    document.getElementById('add-user-btn').addEventListener('click', () => {
-        userForm.reset();
-        clearFormErrors();
-        document.getElementById('user-id').value = '';
-        document.getElementById('modal-title').textContent = 'Adicionar Novo Usuário';
-
-        [cursoSelect, faseSelect, papelSelect].forEach(sel => { if(sel) updateCustomSelectUI(sel, ""); });
-
-        toggleConditionalFields();
-
-        if (nascimentoGroup) nascimentoGroup.classList.remove('hidden');
-        if (passwordGroup) passwordGroup.classList.add('hidden');
-
-        userModal.showModal();
-    });
-
-    function openEditModal(user) {
-        userForm.reset();
-        clearFormErrors();
-        document.getElementById('modal-title').textContent = 'Editar Usuário';
-        document.getElementById('user-id').value = user.id;
-
-        document.getElementById('nome').value = user.nome;
-        document.getElementById('email').value = user.email;
-        document.getElementById('cpf').value = user.cpf ? applyCpfMask(user.cpf) : '';
-        document.getElementById('matricula').value = user.matricula || '';
-        document.getElementById('papel').value = user.tipo;
-
-        const nascimentoInput = document.getElementById('data_nascimento');
-        if (nascimentoInput) nascimentoInput.value = user.data_nascimento ? toInputDateFormat(user.data_nascimento) : '';
-
-        updateCustomSelectUI(papelSelect, user.tipo);
-
-        if (cursoSelect) {
-            const cursoId = user.curso_id || (user.curso && user.curso.id) || '';
-            cursoSelect.value = cursoId;
-            updateCustomSelectUI(cursoSelect, cursoId);
-        }
-
-        if (faseSelect) {
-            const faseVal = user.fase || '';
-            faseSelect.value = faseVal;
-            updateCustomSelectUI(faseSelect, faseVal);
-        }
-
-        toggleConditionalFields();
-
-        if (nascimentoGroup) nascimentoGroup.classList.remove('hidden');
-        if (passwordGroup) passwordGroup.classList.remove('hidden');
-
-        userModal.showModal();
     }
 
     // =======================================================

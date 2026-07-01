@@ -42,9 +42,23 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando solicitações entregues...</td></tr>';
         
         try {
-            // Busca certificados com status ENTREGUE (o backend já filtra pelo curso do coordenador)
-            const response = await fetch(`${API_BASE_URL}/api/certificados?status=ENTREGUE`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === FILTROS QUE SERÃO ENVIADOS PARA O BACKEND ===
+            const filters = {
+                status: 'ENTREGUE',                    // sempre pendentes para validação
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                fase: faseSelect ? faseSelect.value : ''
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/certificados${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
             
             if (!response.ok) throw new Error('Falha ao buscar solicitações entregues.');
@@ -57,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Agrupa os certificados por aluno para facilitar a gestão do Coordenador
+            // Agrupa por aluno (mantido, pois ainda é útil para o coordenador)
             const studentsMap = {};
             pendingCertificates.forEach(cert => {
                 const dadosAluno = cert.aluno || cert.requerente;
@@ -78,20 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let studentsArray = Object.values(studentsMap);
 
-            // Aplicação dos Filtros Locais
-            const filterNome = document.getElementById('aluno').value.toLowerCase().trim();
-            const filterMatricula = document.getElementById('matricula').value.trim();
-            const filterFase = faseSelect ? faseSelect.value : '';
-
-            if (filterNome) studentsArray = studentsArray.filter(s => s.nome?.toLowerCase().includes(filterNome));
-            if (filterMatricula) studentsArray = studentsArray.filter(s => String(s.matricula ?? '').includes(filterMatricula));
-            if (filterFase) studentsArray = studentsArray.filter(s => String(s.fase ?? '') === filterFase);
+            // REMOVA todo o bloco de filtro client-side abaixo:
+            // (não precisa mais filtrar aqui, o backend já fez)
 
             if (!studentsArray.length) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;
             }
 
+            // Renderização permanece igual
             studentListTbody.innerHTML = '';
             studentsArray.forEach(aluno => {
                 const row = document.createElement('tr');

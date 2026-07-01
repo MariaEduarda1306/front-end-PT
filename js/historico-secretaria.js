@@ -41,13 +41,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - BUSCAR TODOS OS ALUNOS (Visão Global)
+    // 2. READ - BUSCAR TODOS OS ALUNOS (COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                curso_id: document.getElementById('curso').value,
+                data_inicio: document.getElementById('data-inicio').value,
+                data_fim: document.getElementById('data-fim').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
@@ -58,11 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
 
             const result = await response.json();
-            allStudentsData = result.data || result;
-
+            let allStudentsData = result.data || result;
             if (!Array.isArray(allStudentsData)) allStudentsData = [];
 
-            // Busca TODAS as solicitações para calcular o total por aluno
+            // Busca contagem de certificados (mantida)
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
                     headers: {
@@ -77,11 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const certificados = certResult.data || certResult;
 
                     const contagemPorAluno = {};
-
                     if (Array.isArray(certificados)) {
                         certificados.forEach(cert => {
                             const alunoId = cert.aluno?.id || cert.aluno_id;
-
                             if (alunoId) {
                                 contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
                             }
@@ -97,6 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Não foi possível obter o total de solicitações.', e);
             }
 
+            // Atualiza a variável global
+            window.allStudentsData = allStudentsData; // para usar no render
+
             renderStudentsTable();
 
         } catch (error) {
@@ -105,48 +118,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (Lógica de Filtro Local)
+    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
     // =======================================================
+
     function renderStudentsTable() {
-        const nomeFilter = document.getElementById('aluno').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('matricula').value.trim();
-        const cursoFilter = document.getElementById('curso').value;
-        
-        const dataInicioVal = document.getElementById('data-inicio').value;
-        const dataFimVal = document.getElementById('data-fim').value;
-        const dataInicio = dataInicioVal ? new Date(dataInicioVal) : null;
-        const dataFim = dataFimVal ? new Date(dataFimVal) : null;
-
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            
-            const alunoCursoId = aluno.curso?.id || aluno.curso_id;
-            const matchCurso = !cursoFilter || (String(alunoCursoId) === String(cursoFilter));
-
-            // Filtro de Data (Baseado no cadastro do aluno)
-            let matchData = true;
-            if (dataInicio || dataFim) {
-                const dataCadastro = new Date(aluno.created_at);
-                dataCadastro.setHours(0,0,0,0);
-                if (dataInicio) dataInicio.setHours(0,0,0,0);
-                if (dataFim) dataFim.setHours(0,0,0,0);
-
-                if (dataInicio && dataCadastro < dataInicio) matchData = false;
-                if (dataFim && dataCadastro > dataFim) matchData = false;
-            }
-
-            return matchNome && matchMatricula && matchCurso && matchData;
-        });
+        const studentsArray = window.allStudentsData || [];
 
         studentListTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
+        if (studentsArray.length === 0) {
+            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = document.createElement('tr');
             row.className = 'student-row';
             row.style.cursor = 'pointer';

@@ -24,12 +24,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - CARREGAR DADOS DA API
+    // 2. READ - CARREGAR DADOS DA API (AGORA COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchStudents() {
         studentsTbody.innerHTML = '<tr><td colspan="6">Carregando alunos...</td></tr>';
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('filtro-nome').value.trim(),
+                matricula: document.getElementById('filtro-matricula').value.trim(),
+                curso_id: document.getElementById('filtro-curso').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
@@ -52,31 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (Lógica de Filtro Local)
+    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
     // =======================================================
-    function renderStudentsTable() {
-        const nomeFilter = document.getElementById('filtro-nome').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('filtro-matricula').value.trim();
-        const cursoFilter = document.getElementById('filtro-curso').value;
-        
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            
-            const alunoCursoId = aluno.curso?.id || aluno.curso_id;
-            const matchCurso = !cursoFilter || (String(alunoCursoId) === String(cursoFilter));
 
-            return matchNome && matchMatricula && matchCurso;
-        });
+    function renderStudentsTable() {
+        // O backend já aplicou os filtros, só renderizamos
+        const studentsArray = allStudentsData;
 
         studentsTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
+        if (studentsArray.length === 0) {
             studentsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = studentsTbody.insertRow();
             row.innerHTML = `
                 <td data-label="Nome Completo">${aluno.nome}</td>

@@ -4372,12 +4372,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - CARREGAR DADOS DA API
+    // 2. READ - CARREGAR DADOS DA API (AGORA COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchStudents() {
         studentsTbody.innerHTML = '<tr><td colspan="6">Carregando alunos...</td></tr>';
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('filtro-nome').value.trim(),
+                matricula: document.getElementById('filtro-matricula').value.trim(),
+                curso_id: document.getElementById('filtro-curso').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
@@ -4400,31 +4412,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (Lógica de Filtro Local)
+    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
     // =======================================================
-    function renderStudentsTable() {
-        const nomeFilter = document.getElementById('filtro-nome').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('filtro-matricula').value.trim();
-        const cursoFilter = document.getElementById('filtro-curso').value;
-        
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            
-            const alunoCursoId = aluno.curso?.id || aluno.curso_id;
-            const matchCurso = !cursoFilter || (String(alunoCursoId) === String(cursoFilter));
 
-            return matchNome && matchMatricula && matchCurso;
-        });
+    function renderStudentsTable() {
+        // O backend já aplicou os filtros, só renderizamos
+        const studentsArray = allStudentsData;
 
         studentsTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
+        if (studentsArray.length === 0) {
             studentsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = studentsTbody.insertRow();
             row.innerHTML = `
                 <td data-label="Nome Completo">${aluno.nome}</td>
@@ -4730,13 +4732,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. READ - CARREGAR E RENDERIZAR USUÁRIOS
+    // 3. READ - CARREGAR E RENDERIZAR USUÁRIOS (COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchUsers() {
         usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Carregando usuários...</td></tr>';
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                search: document.getElementById('filtro-nome').value.trim(),
+                cpf: document.getElementById('filtro-cpf').value.replace(/\D/g, ''), 
+                tipo: document.getElementById('filtro-papel').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
 
             if (!response.ok) throw new Error('Falha ao carregar usuários.');
@@ -4753,27 +4770,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderUsersTable() {
-        const nomeFilter = document.getElementById('filtro-nome').value.toLowerCase().trim();
-        const cpfFilter = document.getElementById('filtro-cpf').value.replace(/\D/g, ''); 
-        const papelFilter = document.getElementById('filtro-papel').value;
+    // =======================================================
+    // 4. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
+    // =======================================================
 
-        const filteredUsers = allUsersData.filter(user => {
-            const userCpf = user.cpf ? user.cpf.replace(/\D/g, '') : '';
-            const matchNome = !nomeFilter || (user.nome && user.nome.toLowerCase().includes(nomeFilter));
-            const matchCpf = !cpfFilter || userCpf.includes(cpfFilter);
-            const matchPapel = !papelFilter || (user.tipo === papelFilter);
-            return matchNome && matchCpf && matchPapel;
-        });
+    function renderUsersTable() {
+        // Backend já filtrou — só renderizamos
+        const usersArray = allUsersData;
 
         usersTbody.innerHTML = '';
 
-        if (filteredUsers.length === 0) {
+        if (usersArray.length === 0) {
             usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum usuário encontrado.</td></tr>';
             return;
         }
 
-        filteredUsers.forEach(user => {
+        usersArray.forEach(user => {
             const row = usersTbody.insertRow();
             row.innerHTML = `
                 <td data-label="Nome">${user.nome}</td>
@@ -4791,92 +4803,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteBtn = row.querySelector('.btn-delete');
             if (deleteBtn) deleteBtn.addEventListener('click', () => openDeleteModal(user.id, user.nome));
         });
-    }
-
-    // Eventos de Filtro
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); renderUsersTable(); });
-
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('filtro-nome').value = '';
-            document.getElementById('filtro-cpf').value = '';
-            
-            const papelSelectFilter = document.getElementById('filtro-papel');
-            papelSelectFilter.value = '';
-            updateCustomSelectUI(papelSelectFilter, "");
-            renderUsersTable();
-        });
-    }
-
-    // =======================================================
-    // 4. LÓGICA DE CAMPOS CONDICIONAIS E MODAL
-    // =======================================================
-    function toggleConditionalFields() {
-        const papel = papelSelect.value;
-        const isAluno = papel === 'ALUNO';
-        const isCoord = papel === 'COORDENADOR';
-
-        if (cursoGroup) cursoGroup.classList.toggle('hidden', !isAluno && !isCoord);
-        if (faseGroup) faseGroup.classList.toggle('hidden', !isAluno);
-
-        if (!isAluno && !isCoord) toggleError(cursoSelect, false);
-        if (!isAluno) toggleError(faseSelect, false);
-    }
-
-    if (papelSelect) papelSelect.addEventListener('change', toggleConditionalFields);
-
-    document.getElementById('add-user-btn').addEventListener('click', () => {
-        userForm.reset();
-        clearFormErrors();
-        document.getElementById('user-id').value = '';
-        document.getElementById('modal-title').textContent = 'Adicionar Novo Usuário';
-
-        [cursoSelect, faseSelect, papelSelect].forEach(sel => { if(sel) updateCustomSelectUI(sel, ""); });
-
-        toggleConditionalFields();
-
-        if (nascimentoGroup) nascimentoGroup.classList.remove('hidden');
-        if (passwordGroup) passwordGroup.classList.add('hidden');
-
-        userModal.showModal();
-    });
-
-    function openEditModal(user) {
-        userForm.reset();
-        clearFormErrors();
-        document.getElementById('modal-title').textContent = 'Editar Usuário';
-        document.getElementById('user-id').value = user.id;
-
-        document.getElementById('nome').value = user.nome;
-        document.getElementById('email').value = user.email;
-        document.getElementById('cpf').value = user.cpf ? applyCpfMask(user.cpf) : '';
-        document.getElementById('matricula').value = user.matricula || '';
-        document.getElementById('papel').value = user.tipo;
-
-        const nascimentoInput = document.getElementById('data_nascimento');
-        if (nascimentoInput) nascimentoInput.value = user.data_nascimento ? toInputDateFormat(user.data_nascimento) : '';
-
-        updateCustomSelectUI(papelSelect, user.tipo);
-
-        if (cursoSelect) {
-            const cursoId = user.curso_id || (user.curso && user.curso.id) || '';
-            cursoSelect.value = cursoId;
-            updateCustomSelectUI(cursoSelect, cursoId);
-        }
-
-        if (faseSelect) {
-            const faseVal = user.fase || '';
-            faseSelect.value = faseVal;
-            updateCustomSelectUI(faseSelect, faseVal);
-        }
-
-        toggleConditionalFields();
-
-        if (nascimentoGroup) nascimentoGroup.classList.remove('hidden');
-        if (passwordGroup) passwordGroup.classList.remove('hidden');
-
-        userModal.showModal();
     }
 
     // =======================================================
@@ -5038,8 +4964,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ## Arquivo: js\historico-aluno.js
 ```javascript
 // js/historico-aluno.js
-
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     
     const accordionContainer = document.getElementById('accordion-container');
     if (!accordionContainer) return;
@@ -5047,100 +4972,109 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Feedback inicial de carregamento
     accordionContainer.innerHTML = '<p>Carregando seu histórico...</p>';
 
-    try {
-        // 1. BUSCAR OS CERTIFICADOS NA API
-        const response = await fetch(`${API_BASE_URL}/api/certificados`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Accept': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
+    async function carregarHistorico() {
+        try {
+            // === BUSCA COM FILTROS NO BACKEND ===
+            const filters = {
+                // Aqui você pode adicionar filtros no futuro (ex: por status, data, etc.)
+                // search: document.getElementById('algum-campo-busca')?.value.trim() || ''
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/certificados${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Não foi possível carregar seu histórico.');
             }
-        });
 
-        if (!response.ok) {
-            throw new Error('Não foi possível carregar seu histórico.');
-        }
+            const result = await response.json();
+            const certificados = result.data || result;
 
-        const result = await response.json();
-        const certificados = result.data || result;
-
-        // 2. VERIFICAR SE EXISTEM DADOS
-        if (certificados.length === 0) {
-            accordionContainer.innerHTML = '<p>Você ainda não enviou nenhum certificado.</p>';
-            return;
-        }
-
-        accordionContainer.innerHTML = ''; // Limpa a mensagem inicial
-
-        // 3. RENDERIZAR CADA CERTIFICADO
-        certificados.forEach(cert => {
-            const statusInfo = getStatusInfo(cert.status);
-            const filePath = cert.id ? `/api/certificados/${cert.id}/arquivo` : '';
-            const dataEnvio = cert.created_at ? new Date(cert.created_at).toLocaleDateString('pt-BR') : '--/--/----';
-            const categoriaTexto = cert.categoria ? cert.categoria.replace(/_/g, ' ') : 'Sem categoria';
-
-            // --- LÓGICA NOVA: BOTÕES DE AÇÃO SOMENTE SE STATUS FOR 'ENTREGUE' ---
-            let acoesHTML = '';
-
-            if (cert.status === 'ENTREGUE') {
-                acoesHTML = `
-                    <div class="actions-section">
-                        <button type="button" class="btn btn-secondary btn-edit-cert" data-id="${cert.id}">
-                            <i class="fas fa-edit"></i>
-                            Editar Envio
-                        </button>
-
-                        <button type="button" class="btn btn-danger btn-delete-cert" data-id="${cert.id}">
-                            <i class="fas fa-trash"></i>
-                            Cancelar Envio
-                        </button>
-                    </div>
-                `;
+            // Verificar se existem dados
+            if (!Array.isArray(certificados) || certificados.length === 0) {
+                accordionContainer.innerHTML = '<p>Você ainda não enviou nenhum certificado.</p>';
+                return;
             }
-            // -------------------------------------------------------------------
 
-            const accordionItemHTML = `
-                <div class="accordion-item">
-                    <button class="accordion-header">
-                        <div class="header-title">
-                            <h3>${cert.nome_certificado}</h3>
-                            <p>ID do Requerimento: ${cert.id}</p>
+            accordionContainer.innerHTML = ''; // Limpa a mensagem inicial
+
+            // Renderizar cada certificado
+            certificados.forEach(cert => {
+                const statusInfo = getStatusInfo(cert.status);
+                const filePath = cert.id ? `/api/certificados/${cert.id}/arquivo` : '';
+                const dataEnvio = cert.created_at ? new Date(cert.created_at).toLocaleDateString('pt-BR') : '--/--/----';
+                const categoriaTexto = cert.categoria ? cert.categoria.replace(/_/g, ' ') : 'Sem categoria';
+
+                let acoesHTML = '';
+                if (cert.status === 'ENTREGUE') {
+                    acoesHTML = `
+                        <div class="actions-section">
+                            <button type="button" class="btn btn-secondary btn-edit-cert" data-id="${cert.id}">
+                                <i class="fas fa-edit"></i> Editar Envio
+                            </button>
+                            <button type="button" class="btn btn-danger btn-delete-cert" data-id="${cert.id}">
+                                <i class="fas fa-trash"></i> Cancelar Envio
+                            </button>
                         </div>
-                        <div class="header-status">
-                            <span class="status ${statusInfo.className}">${statusInfo.text}</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                    </button>
-                    <div class="accordion-content">
-                        <div class="content-wrapper">
-                            <div class="details-list">
-                                <div class="detail-item"><span>Data de Envio:</span> <span>${dataEnvio}</span></div>
-                                <div class="detail-item"><span>Categoria:</span> <span>${categoriaTexto}</span></div>
-                                <div class="detail-item"><span>Horas Solicitadas:</span> <span>${cert.carga_horaria_solicitada}</span></div>
-                                <div class="detail-item"><span>Horas Aprovadas:</span> <span>${cert.horas_validadas || '--'}</span></div>
-                                <div class="detail-item"><span>Observação:</span> <span>${cert.observacao || 'Nenhuma observação.'}</span></div>
+                    `;
+                }
+
+                const accordionItemHTML = `
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <div class="header-title">
+                                <h3>${cert.nome_certificado}</h3>
+                                <p>ID do Requerimento: ${cert.id}</p>
                             </div>
-                            
-                            ${acoesHTML} <div class="preview-section">
-                                <h4>Pré-visualização do Comprovante</h4>
-                                <div class="pdf-preview-area" data-file-path="${filePath}">
-                                    <div class="pdf-preview-state">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                        <span>Carregando comprovante...</span>
+                            <div class="header-status">
+                                <span class="status ${statusInfo.className}">${statusInfo.text}</span>
+                                <i class="fas fa-chevron-down accordion-icon"></i>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="content-wrapper">
+                                <div class="details-list">
+                                    <div class="detail-item"><span>Data de Envio:</span> <span>${dataEnvio}</span></div>
+                                    <div class="detail-item"><span>Categoria:</span> <span>${categoriaTexto}</span></div>
+                                    <div class="detail-item"><span>Horas Solicitadas:</span> <span>${cert.carga_horaria_solicitada}</span></div>
+                                    <div class="detail-item"><span>Horas Aprovadas:</span> <span>${cert.horas_validadas || '--'}</span></div>
+                                    <div class="detail-item"><span>Observação:</span> <span>${cert.observacao || 'Nenhuma observação.'}</span></div>
+                                </div>
+                                ${acoesHTML}
+                                <div class="preview-section">
+                                    <h4>Pré-visualização do Comprovante</h4>
+                                    <div class="pdf-preview-area" data-file-path="${filePath}">
+                                        <div class="pdf-preview-state">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <span>Carregando comprovante...</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-            accordionContainer.innerHTML += accordionItemHTML;
-        });
+                `;
+                accordionContainer.innerHTML += accordionItemHTML;
+            });
 
-        // 4. ATIVAR A FUNCIONALIDADE DE CLIQUE (ACORDEÃO) E PREVIEWS
-        setupAccordion();
-        carregarPreviewsPdf();
-        configurarBotoesDeAcao(); // Inicia os ouvintes dos novos botões
+            // Ativar funcionalidades
+            setupAccordion();
+            carregarPreviewsPdf();
+            configurarBotoesDeAcao();
+
+        } catch (error) {
+            accordionContainer.innerHTML = `<p style="color: var(--status-reprovado);">${error.message}</p>`;
+            console.error('Erro ao carregar histórico:', error);
+        }
+    }
 
     // =======================================================
     // FUNÇÕES DOS BOTÕES DE EDIÇÃO E EXCLUSÃO (ALUNO)
@@ -5163,18 +5097,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
 
                         if (response.ok) {
-                            if (typeof showToast === 'function') showToast('Envio cancelado com sucesso!');
-                            else alert('Envio cancelado com sucesso!');
-                            setTimeout(() => location.reload(), 1000); // Recarrega a página para atualizar a lista
+                            showToast('Envio cancelado com sucesso!');
+                            setTimeout(() => location.reload(), 1000);
                         } else {
                             const err = await response.json();
-                            if (typeof showToast === 'function') showToast(err.message || 'Erro ao cancelar o envio.', 'error');
-                            else alert(err.message || 'Erro ao cancelar o envio.');
+                            showToast(err.message || 'Erro ao cancelar o envio.', 'error');
                         }
                     } catch (error) {
                         console.error(error);
-                        if (typeof showToast === 'function') showToast('Erro de conexão.', 'error');
-                        else alert('Erro de conexão.');
+                        showToast('Erro de conexão.', 'error');
                     }
                 }
             });
@@ -5184,7 +5115,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.btn-edit-cert').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const certId = e.currentTarget.dataset.id;
-                // Redireciona para o formulário de cadastro enviando o ID pela URL
                 window.location.href = `cadastro-horas.html?edit=${certId}`;
             });
         });
@@ -5198,7 +5128,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (const area of previewAreas) {
             const rawPath = area.dataset.filePath;
-
             if (!rawPath) {
                 mostrarPreviewIndisponivel(area, 'Nenhum comprovante foi encontrado para esta atividade.');
                 continue;
@@ -5217,36 +5146,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const contentType = response.headers.get('content-type') || '';
 
-                if (!response.ok) {
-                    throw new Error('Arquivo indisponível.');
-                }
-
-                if (contentType.includes('text/html')) {
-                    throw new Error('O servidor retornou uma página HTML em vez do PDF.');
-                }
+                if (!response.ok) throw new Error('Arquivo indisponível.');
+                if (contentType.includes('text/html')) throw new Error('O servidor retornou HTML em vez do PDF.');
 
                 const blob = await response.blob();
                 const pdfBlob = new Blob([blob], { type: 'application/pdf' });
                 const pdfUrl = URL.createObjectURL(pdfBlob);
 
                 area.innerHTML = `
-                    <iframe
-                        class="pdf-preview"
-                        src="${pdfUrl}"
-                        title="Pré-visualização do comprovante">
-                    </iframe>
-
+                    <iframe class="pdf-preview" src="${pdfUrl}" title="Pré-visualização do comprovante"></iframe>
                     <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
-                        <i class="fas fa-up-right-from-square"></i>
-                        Abrir comprovante em nova guia
+                        <i class="fas fa-up-right-from-square"></i> Abrir comprovante em nova guia
                     </a>
                 `;
             } catch (error) {
                 console.warn('Erro ao carregar comprovante:', error);
-                mostrarPreviewIndisponivel(
-                    area,
-                    'Não foi possível carregar o comprovante.'
-                );
+                mostrarPreviewIndisponivel(area, 'Não foi possível carregar o comprovante.');
             }
         }
     }
@@ -5261,10 +5176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
-    } catch (error) {
-        accordionContainer.innerHTML = `<p style="color: var(--status-reprovado);">${error.message}</p>`;
-        console.error('Erro ao carregar histórico:', error);
-    }
+    // Inicialização
+    carregarHistorico();
 });
 ```
 
@@ -5330,39 +5243,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let categoriasDisponiveis = [];
 
     // =======================================================
-    // 1. CARREGAMENTO DE DADOS INICIAIS
+    // 1. CARREGAMENTO DE DADOS INICIAIS (AGORA COM FILTROS NO BACKEND)
     // =======================================================
-
-    async function fetchCategorias() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/categorias`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
-            });
-            if (response.ok) {
-                const result = await response.json();
-                categoriasDisponiveis = result.data || result;
-            }
-        } catch (error) {
-            console.error("Erro ao carregar categorias:", error);
-        }
-    }
 
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando alunos...</td></tr>';
         
         try {
-            // Busca apenas alunos (o Coordenador vê apenas o seu curso via Backend)
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                fase: document.getElementById('fase').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
             
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
             
             const result = await response.json();
-            allStudentsData = result.data || result;
-            if (!Array.isArray(allStudentsData)) allStudentsData = [];
+            let studentsData = result.data || result;
+            if (!Array.isArray(studentsData)) studentsData = [];
 
-            // Busca certificados para calcular o total de solicitações por aluno
+            // Busca contagem de certificados (mantida)
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
@@ -5380,15 +5293,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     
-                    allStudentsData = allStudentsData.map(aluno => {
+                    studentsData = studentsData.map(aluno => {
                         aluno.certificados_count = contagemPorAluno[aluno.id] || 0;
                         return aluno;
                     });
                 }
             } catch (e) {
-                console.warn('Não foi possível obter a contagem detalhada', e);
+                console.warn('Não foi possível obter contagem de certificados', e);
             }
 
+            allStudentsData = studentsData; // atualiza cache
             renderStudentsTable();
 
         } catch (error) {
@@ -5397,29 +5311,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. FILTRAGEM E RENDERIZAÇÃO DA LISTA
+    // 2. RENDERIZAÇÃO (SEM FILTRO CLIENT-SIDE)
     // =======================================================
 
     function renderStudentsTable() {
-        const nomeFilter = document.getElementById('aluno').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('matricula').value.trim();
-        const faseFilter = document.getElementById('fase').value;
-
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            const matchFase = !faseFilter || (String(aluno.fase || '') === String(faseFilter));
-            return matchNome && matchMatricula && matchFase;
-        });
+        // Não precisa mais filtrar aqui — o backend já filtrou
+        const studentsArray = allStudentsData;
 
         studentListTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
+        if (!studentsArray || studentsArray.length === 0) {
+            studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = document.createElement('tr');
             row.className = 'student-row';
             row.style.cursor = 'pointer';
@@ -5443,7 +5349,7 @@ document.addEventListener('DOMContentLoaded', () => {
             studentListTbody.appendChild(row);
         });
     }
-
+    
     // =======================================================
     // 3. VISTA DE DETALHES (HISTÓRICO INDIVIDUAL)
     // =======================================================
@@ -5810,13 +5716,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - BUSCAR TODOS OS ALUNOS (Visão Global)
+    // 2. READ - BUSCAR TODOS OS ALUNOS (COM FILTROS NO BACKEND)
     // =======================================================
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
+            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
+            const filters = {
+                tipo: 'ALUNO',
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                curso_id: document.getElementById('curso').value,
+                data_inicio: document.getElementById('data-inicio').value,
+                data_fim: document.getElementById('data-fim').value
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/usuarios${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Accept': 'application/json',
@@ -5827,11 +5746,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
 
             const result = await response.json();
-            allStudentsData = result.data || result;
-
+            let allStudentsData = result.data || result;
             if (!Array.isArray(allStudentsData)) allStudentsData = [];
 
-            // Busca TODAS as solicitações para calcular o total por aluno
+            // Busca contagem de certificados (mantida)
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
                     headers: {
@@ -5846,11 +5764,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const certificados = certResult.data || certResult;
 
                     const contagemPorAluno = {};
-
                     if (Array.isArray(certificados)) {
                         certificados.forEach(cert => {
                             const alunoId = cert.aluno?.id || cert.aluno_id;
-
                             if (alunoId) {
                                 contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
                             }
@@ -5866,6 +5782,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Não foi possível obter o total de solicitações.', e);
             }
 
+            // Atualiza a variável global
+            window.allStudentsData = allStudentsData; // para usar no render
+
             renderStudentsTable();
 
         } catch (error) {
@@ -5874,48 +5793,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (Lógica de Filtro Local)
+    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
     // =======================================================
+
     function renderStudentsTable() {
-        const nomeFilter = document.getElementById('aluno').value.toLowerCase().trim();
-        const matriculaFilter = document.getElementById('matricula').value.trim();
-        const cursoFilter = document.getElementById('curso').value;
-        
-        const dataInicioVal = document.getElementById('data-inicio').value;
-        const dataFimVal = document.getElementById('data-fim').value;
-        const dataInicio = dataInicioVal ? new Date(dataInicioVal) : null;
-        const dataFim = dataFimVal ? new Date(dataFimVal) : null;
-
-        const filteredStudents = allStudentsData.filter(aluno => {
-            const matchNome = !nomeFilter || (aluno.nome && aluno.nome.toLowerCase().includes(nomeFilter));
-            const matchMatricula = !matriculaFilter || (String(aluno.matricula || '').includes(matriculaFilter));
-            
-            const alunoCursoId = aluno.curso?.id || aluno.curso_id;
-            const matchCurso = !cursoFilter || (String(alunoCursoId) === String(cursoFilter));
-
-            // Filtro de Data (Baseado no cadastro do aluno)
-            let matchData = true;
-            if (dataInicio || dataFim) {
-                const dataCadastro = new Date(aluno.created_at);
-                dataCadastro.setHours(0,0,0,0);
-                if (dataInicio) dataInicio.setHours(0,0,0,0);
-                if (dataFim) dataFim.setHours(0,0,0,0);
-
-                if (dataInicio && dataCadastro < dataInicio) matchData = false;
-                if (dataFim && dataCadastro > dataFim) matchData = false;
-            }
-
-            return matchNome && matchMatricula && matchCurso && matchData;
-        });
+        const studentsArray = window.allStudentsData || [];
 
         studentListTbody.innerHTML = '';
 
-        if (filteredStudents.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
+        if (studentsArray.length === 0) {
+            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
             return;
         }
 
-        filteredStudents.forEach(aluno => {
+        studentsArray.forEach(aluno => {
             const row = document.createElement('tr');
             row.className = 'student-row';
             row.style.cursor = 'pointer';
@@ -7708,6 +7599,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function buildQueryParams(filters = {}) {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '' && value !== 'null') {
+            params.append(key, value);
+        }
+    });
+    
+    return params.toString();
+}
 ```
 
 ## Arquivo: js\validar-horas.js
@@ -7756,9 +7658,23 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando solicitações entregues...</td></tr>';
         
         try {
-            // Busca certificados com status ENTREGUE (o backend já filtra pelo curso do coordenador)
-            const response = await fetch(`${API_BASE_URL}/api/certificados?status=ENTREGUE`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+            // === FILTROS QUE SERÃO ENVIADOS PARA O BACKEND ===
+            const filters = {
+                status: 'ENTREGUE',                    // sempre pendentes para validação
+                search: document.getElementById('aluno').value.trim(),
+                matricula: document.getElementById('matricula').value.trim(),
+                fase: faseSelect ? faseSelect.value : ''
+            };
+
+            const queryString = buildQueryParams(filters);
+            const url = `${API_BASE_URL}/api/certificados${queryString ? '?' + queryString : ''}`;
+
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`, 
+                    'Accept': 'application/json', 
+                    'ngrok-skip-browser-warning': 'true' 
+                }
             });
             
             if (!response.ok) throw new Error('Falha ao buscar solicitações entregues.');
@@ -7771,7 +7687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Agrupa os certificados por aluno para facilitar a gestão do Coordenador
+            // Agrupa por aluno (mantido, pois ainda é útil para o coordenador)
             const studentsMap = {};
             pendingCertificates.forEach(cert => {
                 const dadosAluno = cert.aluno || cert.requerente;
@@ -7792,20 +7708,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let studentsArray = Object.values(studentsMap);
 
-            // Aplicação dos Filtros Locais
-            const filterNome = document.getElementById('aluno').value.toLowerCase().trim();
-            const filterMatricula = document.getElementById('matricula').value.trim();
-            const filterFase = faseSelect ? faseSelect.value : '';
-
-            if (filterNome) studentsArray = studentsArray.filter(s => s.nome?.toLowerCase().includes(filterNome));
-            if (filterMatricula) studentsArray = studentsArray.filter(s => String(s.matricula ?? '').includes(filterMatricula));
-            if (filterFase) studentsArray = studentsArray.filter(s => String(s.fase ?? '') === filterFase);
+            // REMOVA todo o bloco de filtro client-side abaixo:
+            // (não precisa mais filtrar aqui, o backend já fez)
 
             if (!studentsArray.length) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;
             }
 
+            // Renderização permanece igual
             studentListTbody.innerHTML = '';
             studentsArray.forEach(aluno => {
                 const row = document.createElement('tr');
