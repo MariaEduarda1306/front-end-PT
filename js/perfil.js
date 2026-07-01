@@ -27,92 +27,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setAvatarState(hasPhoto, url = '') {
         if (!avatarWrapper || !profileAvatarImg) return;
-
-        const hasValidPhoto = Boolean(hasPhoto && url);
-
-        avatarWrapper.classList.toggle('has-photo', hasValidPhoto);
+        
+        avatarWrapper.classList.toggle('has-photo', hasPhoto);
 
         if (removeBtn) {
-            removeBtn.classList.toggle('hidden', !hasValidPhoto);
+            removeBtn.classList.add('hidden');
         }
-
-        if (hasValidPhoto) {
+        
+        if (hasPhoto && url) {
             profileAvatarImg.src = url;
         } else {
             profileAvatarImg.removeAttribute('src');
         }
     }
 
-    function getRawAvatarPath(user = loggedInUser) {
-        return (
-            user.avatar_url ||
-            user.foto_perfil_url ||
-            user.foto_url ||
-            user.foto_perfil ||
-            ''
-        );
-    }
-
-    function backendSentAvatarField(user = {}) {
-        return [
-            'avatar_url',
-            'foto_perfil_url',
-            'foto_url',
-            'foto_perfil'
-        ].some(field => Object.prototype.hasOwnProperty.call(user, field));
-    }
-
     function getAvatarDisplayUrl(user = loggedInUser) {
-        const rawAvatarPath = getRawAvatarPath(user);
-
-        if (rawAvatarPath) {
-            if (
-                rawAvatarPath.startsWith('data:') ||
-                rawAvatarPath.startsWith('blob:') ||
-                rawAvatarPath.startsWith('http')
-            ) {
-                return rawAvatarPath;
-            }
-
-            return formatFileUrl(rawAvatarPath);
-        }
-
         if (user.avatar_preview) {
             return user.avatar_preview;
         }
 
-        return '';
-    }
-
-    function appendCacheBuster(url) {
-        if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
-            return url;
+        if (!user.avatar_url) {
+            return '';
         }
 
-        const separator = url.includes('?') ? '&' : '?';
-        return `${url}${separator}v=${Date.now()}`;
-    }
+        if (
+            user.avatar_url.startsWith('data:') ||
+            user.avatar_url.startsWith('blob:')
+        ) {
+            return user.avatar_url;
+        }
 
-    function extractAvatarUrl(result = {}) {
-        return (
-            result.avatar_url ||
-            result.data?.avatar_url ||
-            result.usuario?.avatar_url ||
-            result.data?.usuario?.avatar_url ||
-            result.foto_perfil_url ||
-            result.data?.foto_perfil_url ||
-            result.usuario?.foto_perfil_url ||
-            result.data?.usuario?.foto_perfil_url ||
-            result.foto_url ||
-            result.data?.foto_url ||
-            result.usuario?.foto_url ||
-            result.data?.usuario?.foto_url ||
-            result.foto_perfil ||
-            result.data?.foto_perfil ||
-            result.usuario?.foto_perfil ||
-            result.data?.usuario?.foto_perfil ||
-            ''
-        );
+        return formatFileUrl(user.avatar_url);
     }
 
     function isProtectedAvatarUrl(url) {
@@ -220,19 +165,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
+            // Compatível com:
+            // { data: usuario }
+            // { usuario: usuario }
+            // usuario direto
             const usuarioAtualizado = data.data || data.usuario || data;
+
             const avatarPreviewAtual = loggedInUser.avatar_preview;
 
             Object.assign(loggedInUser, usuarioAtualizado);
 
-            if (backendSentAvatarField(usuarioAtualizado)) {
-                delete loggedInUser.avatar_preview;
-            } else if (!getRawAvatarPath(loggedInUser) && avatarPreviewAtual) {
+            // Mantém a prévia local apenas se o backend ainda não tiver avatar salvo
+            if (!loggedInUser.avatar_url && avatarPreviewAtual) {
                 loggedInUser.avatar_preview = avatarPreviewAtual;
+            } else {
+                delete loggedInUser.avatar_preview;
             }
 
             localStorage.setItem('userData', JSON.stringify(loggedInUser));
-
+           
             return loggedInUser;
         } catch (error) {
             console.warn('Usando dados locais do usuário:', error);
@@ -454,34 +405,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error('Erro ao salvar foto.');
                     }
 
-                    const result = await response.json().catch(() => ({}));
-                    const avatarUrlRetornada = extractAvatarUrl(result);
+                    const result = await response.json();
+
+                    const avatarUrlRetornada =
+                        result.avatar_url ||
+                        result.data?.avatar_url ||
+                        result.usuario?.avatar_url ||
+                        result.data?.usuario?.avatar_url;
 
                     if (avatarUrlRetornada) {
-                        loggedInUser.avatar_url = appendCacheBuster(avatarUrlRetornada);
+                        loggedInUser.avatar_url = avatarUrlRetornada;
                         delete loggedInUser.avatar_preview;
-                    } else {
-                        await buscarUsuarioLogado();
-
-                        if (getRawAvatarPath(loggedInUser)) {
-                            delete loggedInUser.avatar_preview;
-                        }
                     }
 
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    let finalAvatarUrl = '';
+                    let finalAvatarUrl = localPreview;
+
                     try {
-                        finalAvatarUrl = await resolveAvatarDisplayUrl();
+                        finalAvatarUrl = await resolveAvatarDisplayUrl() || localPreview;
                     } catch (error) {
-                        console.warn('Usando prévia local após upload:', error);
+                        loggedInUser.avatar_preview = localPreview;
+                        localStorage.setItem('userData', JSON.stringify(loggedInUser));
                     }
 
-                    if (finalAvatarUrl) {
-                        setAvatarState(true, finalAvatarUrl);
-                    } else {
-                        setAvatarState(true, localPreview);
-                    }
+                    setAvatarState(true, finalAvatarUrl);
 
                     showToast('Foto de perfil atualizada!');
                 } catch (error) {
@@ -490,13 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    let fallbackAvatar = '';
-
-                    try {
-                        fallbackAvatar = await resolveAvatarDisplayUrl();
-                    } catch (error) {
-                        fallbackAvatar = loggedInUser.avatar_preview || '';
-                    }
+                    const fallbackAvatar = getAvatarDisplayUrl();
 
                     if (fallbackAvatar) {
                         setAvatarState(true, fallbackAvatar);
@@ -517,86 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (removeBtn) {
-            removeBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                if (avatarMenu) {
-                    avatarMenu.style.display = 'none';
-                }
-
-                const avatarAtual = getAvatarDisplayUrl();
-
-                if (!avatarAtual) {
-                    setAvatarState(false);
-                    return;
-                }
-
-                const confirmarRemocao = window.confirm('Deseja remover sua foto de perfil?');
-
-                if (!confirmarRemocao) {
-                    return;
-                }
-
-                const previousUserData = { ...loggedInUser };
-                const originalBtn = removeBtn.innerHTML;
-
-                try {
-                    removeBtn.disabled = true;
-                    removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
-
-                    delete loggedInUser.avatar_preview;
-                    delete loggedInUser.avatar_url;
-                    delete loggedInUser.foto_perfil_url;
-                    delete loggedInUser.foto_url;
-                    delete loggedInUser.foto_perfil;
-
-                    localStorage.setItem('userData', JSON.stringify(loggedInUser));
-                    setAvatarState(false);
-
-                    const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Accept': 'application/json',
-                            'ngrok-skip-browser-warning': 'true'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Erro ao remover foto.');
-                    }
-
-                    localStorage.setItem('userData', JSON.stringify(loggedInUser));
-                    setAvatarState(false);
-
-                    showToast('Foto de perfil removida!');
-                } catch (error) {
-                    Object.keys(loggedInUser).forEach(key => delete loggedInUser[key]);
-                    Object.assign(loggedInUser, previousUserData);
-
-                    localStorage.setItem('userData', JSON.stringify(loggedInUser));
-
-                    let fallbackAvatar = '';
-
-                    try {
-                        fallbackAvatar = await resolveAvatarDisplayUrl();
-                    } catch (error) {
-                        fallbackAvatar = loggedInUser.avatar_preview || '';
-                    }
-
-                    if (fallbackAvatar) {
-                        setAvatarState(true, fallbackAvatar);
-                    } else {
-                        setAvatarState(false);
-                    }
-
-                    showToast(error.message || 'Erro ao remover foto.', 'error');
-                } finally {
-                    removeBtn.disabled = false;
-                    removeBtn.innerHTML = originalBtn;
-                }
-            });
+            removeBtn.classList.add('hidden');
         }
     }
 

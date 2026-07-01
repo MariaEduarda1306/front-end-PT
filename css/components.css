@@ -484,20 +484,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 .profile-avatar-wrapper:hover .avatar-edit-overlay { opacity: 1; }
 #avatar-input { display: none; }
 .avatar-menu {
-    position: absolute;
-    top: calc(100% + 0.8rem);
-    left: 50%;
-    transform: translateX(-50%);
-
-    min-width: 22rem;
-
-    background-color: var(--background-light);
-    border: 1px solid var(--glass-border);
-    border-radius: 0.8rem;
-    overflow: hidden;
-    display: none;
-    z-index: 20;
-
+    position: absolute; bottom: -5rem; left: 50%; transform: translateX(-50%);
+    background-color: var(--background-light); border: 1px solid var(--glass-border);
+    border-radius: 0.8rem; overflow: hidden; display: none; z-index: 20;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .avatar-menu button {
@@ -507,8 +496,6 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 }
 .avatar-menu button:last-child { border-bottom: none; }
 .avatar-menu button:hover { background-color: var(--primary-glow); }
-#remove-btn { color: #fca5a5;}
-#remove-btn:hover { background-color: rgba(239, 68, 68, 0.18); color: #fecaca;}
 .avatar-menu button i { margin-right: 1rem; width: 1.2em; }
 .profile-name { font-size: 2.8rem; font-weight: 600; margin: 0; }
 .profile-email { font-size: 1.6rem; color: var(--text-secondary); margin: 0.5rem 0 3rem 0; font-size: clamp(1.2rem, 4vw, 1.6rem); white-space: nowrap; }

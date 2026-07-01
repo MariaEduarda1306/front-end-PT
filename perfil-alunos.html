@@ -24,7 +24,7 @@
     <div class="profile-card">
       <div class="profile-avatar-wrapper">
           <i id="default-avatar-icon" class="fas fa-user-circle"></i>
-          <img id="profile-avatar" alt="Foto do Perfil">
+          <img id="profile-avatar" src="" alt="Foto do Perfil" onerror="this.parentElement.classList.remove('has-photo')">
           <div class="avatar-edit-overlay"><i class="fas fa-camera"></i></div>
           <input type="file" id="avatar-input" accept="image/*">
           
