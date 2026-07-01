@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('upload-btn');
     const removeBtn = document.getElementById('remove-btn');
 
+    let currentAvatarObjectUrl = null;
     // =======================================================
     // 2. FUNÇÕES AUXILIARES DE INTERFACE
     // =======================================================
@@ -45,20 +46,71 @@ document.addEventListener('DOMContentLoaded', () => {
             return user.avatar_preview;
         }
 
-        if (user.avatar_url) {
-            if (
-                user.avatar_url.startsWith('data:') ||
-                user.avatar_url.startsWith('blob:') ||
-                user.avatar_url.startsWith('http')
-            ) {
-                return user.avatar_url;
-            }
-
-            return formatFileUrl(user.avatar_url);
+        if (!user.avatar_url) {
+            return '';
         }
 
-        return '';
+        if (
+            user.avatar_url.startsWith('data:') ||
+            user.avatar_url.startsWith('blob:')
+        ) {
+            return user.avatar_url;
+        }
+
+        return formatFileUrl(user.avatar_url);
     }
+
+    function isProtectedAvatarUrl(url) {
+        try {
+            const parsedUrl = new URL(url, window.location.href);
+            return parsedUrl.pathname.startsWith('/api/usuarios/avatars/');
+        } catch (error) {
+            return String(url).includes('/api/usuarios/avatars/');
+        }
+    }
+
+    async function resolveAvatarDisplayUrl(user = loggedInUser) {
+        const avatarUrl = getAvatarDisplayUrl(user);
+
+        if (!avatarUrl) {
+            return '';
+        }
+
+        if (
+            avatarUrl.startsWith('data:') ||
+            avatarUrl.startsWith('blob:') ||
+            !isProtectedAvatarUrl(avatarUrl)
+        ) {
+            return avatarUrl;
+        }
+
+        const response = await fetch(avatarUrl, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'image/*,*/*',
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar a foto de perfil.');
+        }
+
+        const blob = await response.blob();
+
+        if (currentAvatarObjectUrl) {
+            URL.revokeObjectURL(currentAvatarObjectUrl);
+        }
+
+        currentAvatarObjectUrl = URL.createObjectURL(blob);
+        return currentAvatarObjectUrl;
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (currentAvatarObjectUrl) {
+            URL.revokeObjectURL(currentAvatarObjectUrl);
+        }
+    });
 
     function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
@@ -123,13 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             Object.assign(loggedInUser, usuarioAtualizado);
 
-            // Mantém a prévia local caso o backend/mock ainda não entregue uma imagem real
-            if (avatarPreviewAtual) {
+            // Mantém a prévia local apenas se o backend ainda não tiver avatar salvo
+            if (!loggedInUser.avatar_url && avatarPreviewAtual) {
                 loggedInUser.avatar_preview = avatarPreviewAtual;
+            } else {
+                delete loggedInUser.avatar_preview;
             }
 
             localStorage.setItem('userData', JSON.stringify(loggedInUser));
-
+           
             return loggedInUser;
         } catch (error) {
             console.warn('Usando dados locais do usuário:', error);
@@ -157,25 +211,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Carregamento de Avatar
-        const avatarDisplayUrl = getAvatarDisplayUrl();
+        (async () => {
+            try {
+                const avatarDisplayUrl = await resolveAvatarDisplayUrl();
 
-        if (avatarDisplayUrl) {
-            const imgPreload = new Image();
-
-            imgPreload.onload = () => setAvatarState(true, avatarDisplayUrl);
-
-            imgPreload.onerror = () => {
+                if (avatarDisplayUrl) {
+                    setAvatarState(true, avatarDisplayUrl);
+                } else {
+                    setAvatarState(false);
+                }
+            } catch (error) {
                 if (loggedInUser.avatar_preview) {
                     setAvatarState(true, loggedInUser.avatar_preview);
                 } else {
                     setAvatarState(false);
                 }
-            };
-
-            imgPreload.src = avatarDisplayUrl;
-        } else {
-            setAvatarState(false);
-        }
+            }
+        })();
 
         // Dados específicos por papel
         const userType = loggedInUser.tipo;
@@ -309,6 +361,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                const maxAvatarSize = 2 * 1024 * 1024; // 2 MB
+
+                if (file.size > maxAvatarSize) {
+                    showToast('A foto de perfil deve ter no máximo 2 MB.', 'error');
+                    avatarInput.value = '';
+                    return;
+                }
+
                 if (avatarMenu) {
                     avatarMenu.style.display = 'none';
                 }
@@ -355,15 +415,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (avatarUrlRetornada) {
                         loggedInUser.avatar_url = avatarUrlRetornada;
+                        delete loggedInUser.avatar_preview;
                     }
 
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    const finalAvatarUrl = getAvatarDisplayUrl();
+                    let finalAvatarUrl = localPreview;
 
-                    if (finalAvatarUrl) {
-                        setAvatarState(true, finalAvatarUrl);
+                    try {
+                        finalAvatarUrl = await resolveAvatarDisplayUrl() || localPreview;
+                    } catch (error) {
+                        loggedInUser.avatar_preview = localPreview;
+                        localStorage.setItem('userData', JSON.stringify(loggedInUser));
                     }
+
+                    setAvatarState(true, finalAvatarUrl);
 
                     showToast('Foto de perfil atualizada!');
                 } catch (error) {
