@@ -122,7 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
         usersTbody.innerHTML = '';
 
         if (usersArray.length === 0) {
-            usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum usuário encontrado.</td></tr>';
+            const searchTerm = document.getElementById('filtro-nome').value.trim();
+            const cpfTerm = document.getElementById('filtro-cpf').value.trim();
+            const papelValue = document.getElementById('filtro-papel').value;
+
+            let mensagem = 'Nenhum usuário encontrado.';
+            
+            if (searchTerm || cpfTerm || papelValue) {
+                mensagem = 'Nenhum usuário encontrado com estes filtros.';
+            }
+
+            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 

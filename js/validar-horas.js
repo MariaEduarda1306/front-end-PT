@@ -66,7 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const pendingCertificates = result.data || result;
 
             if (!Array.isArray(pendingCertificates) || pendingCertificates.length === 0) {
-                studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma solicitação entregue para validação no momento.</td></tr>';
+                const searchTerm = document.getElementById('aluno').value.trim();
+                const matriculaTerm = document.getElementById('matricula').value.trim();
+                const faseValue = faseSelect ? faseSelect.value : '';
+                
+                let mensagem = 'Nenhuma solicitação entregue para validação no momento.';
+                
+                if (searchTerm || matriculaTerm || faseValue) {
+                    mensagem = 'Nenhum aluno encontrado com os filtros aplicados.';
+                }
+                
+                studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
                 return;
             }
 
@@ -91,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const studentsArray = Object.values(studentsMap);
 
+            // Esta verificação raramente será atingida, mas mantemos por segurança
             if (studentsArray.length === 0) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;

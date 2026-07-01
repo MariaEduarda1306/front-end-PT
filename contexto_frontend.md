@@ -4422,7 +4422,17 @@ document.addEventListener('DOMContentLoaded', () => {
         studentsTbody.innerHTML = '';
 
         if (studentsArray.length === 0) {
-            studentsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum aluno encontrado.</td></tr>';
+            const searchTerm = document.getElementById('filtro-nome').value.trim();
+            const matriculaTerm = document.getElementById('filtro-matricula').value.trim();
+            const cursoValue = document.getElementById('filtro-curso').value;
+
+            let mensagem = 'Nenhum aluno encontrado.';
+            
+            if (searchTerm || matriculaTerm || cursoValue) {
+                mensagem = 'Nenhum aluno encontrado com estes filtros.';
+            }
+
+            studentsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -4797,7 +4807,17 @@ document.addEventListener('DOMContentLoaded', () => {
         usersTbody.innerHTML = '';
 
         if (usersArray.length === 0) {
-            usersTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum usuário encontrado.</td></tr>';
+            const searchTerm = document.getElementById('filtro-nome').value.trim();
+            const cpfTerm = document.getElementById('filtro-cpf').value.trim();
+            const papelValue = document.getElementById('filtro-papel').value;
+
+            let mensagem = 'Nenhum usuário encontrado.';
+            
+            if (searchTerm || cpfTerm || papelValue) {
+                mensagem = 'Nenhum usuário encontrado com estes filtros.';
+            }
+
+            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -5372,7 +5392,17 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '';
 
         if (!studentsArray || studentsArray.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
+            const searchTerm = document.getElementById('aluno').value.trim();
+            const matriculaTerm = document.getElementById('matricula').value.trim();
+            const faseValue = document.getElementById('fase').value;
+
+            let mensagem = 'Nenhum aluno encontrado.';
+            
+            if (searchTerm || matriculaTerm || faseValue) {
+                mensagem = 'Nenhum aluno encontrado com estes filtros.';
+            }
+
+            studentListTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -5877,7 +5907,19 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '';
 
         if (studentsArray.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
+            const searchTerm = document.getElementById('aluno').value.trim();
+            const matriculaTerm = document.getElementById('matricula').value.trim();
+            const cursoValue = document.getElementById('curso').value;
+            const dataInicio = document.getElementById('data-inicio').value;
+            const dataFim = document.getElementById('data-fim').value;
+
+            let mensagem = 'Nenhum aluno encontrado.';
+            
+            if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
+                mensagem = 'Nenhum aluno encontrado com estes filtros.';
+            }
+
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -7784,7 +7826,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const pendingCertificates = result.data || result;
 
             if (!Array.isArray(pendingCertificates) || pendingCertificates.length === 0) {
-                studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma solicitação entregue para validação no momento.</td></tr>';
+                const searchTerm = document.getElementById('aluno').value.trim();
+                const matriculaTerm = document.getElementById('matricula').value.trim();
+                const faseValue = faseSelect ? faseSelect.value : '';
+                
+                let mensagem = 'Nenhuma solicitação entregue para validação no momento.';
+                
+                if (searchTerm || matriculaTerm || faseValue) {
+                    mensagem = 'Nenhum aluno encontrado com os filtros aplicados.';
+                }
+                
+                studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
                 return;
             }
 
@@ -7809,6 +7861,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const studentsArray = Object.values(studentsMap);
 
+            // Esta verificação raramente será atingida, mas mantemos por segurança
             if (studentsArray.length === 0) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;

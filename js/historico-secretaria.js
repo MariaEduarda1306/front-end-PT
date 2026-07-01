@@ -127,7 +127,19 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '';
 
         if (studentsArray.length === 0) {
-            studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
+            const searchTerm = document.getElementById('aluno').value.trim();
+            const matriculaTerm = document.getElementById('matricula').value.trim();
+            const cursoValue = document.getElementById('curso').value;
+            const dataInicio = document.getElementById('data-inicio').value;
+            const dataFim = document.getElementById('data-fim').value;
+
+            let mensagem = 'Nenhum aluno encontrado.';
+            
+            if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
+                mensagem = 'Nenhum aluno encontrado com estes filtros.';
+            }
+
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
             return;
         }
 
