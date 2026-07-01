@@ -6327,6 +6327,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const removeBtn = document.getElementById('remove-btn');
 
     let currentAvatarObjectUrl = null;
+
+    // =======================================================
+    // FUNÇÃO DE CONFIRMAÇÃO PERSONALIZADA (Modal do Sistema)
+    // =======================================================
+    async function showConfirmModal(title, message, confirmText = 'Confirmar', type = 'danger') {
+        return new Promise((resolve) => {
+            let modal = document.getElementById('custom-confirm-modal');
+            
+            if (!modal) {
+                modal = document.createElement('dialog');
+                modal.id = 'custom-confirm-modal';
+                modal.className = 'password-modal'; // reutiliza os estilos existentes
+                modal.innerHTML = `
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="confirm-title"></h3>
+                        <button class="close-btn" id="confirm-close">×</button>
+                    </div>
+                    <div class="modal-content-body" style="padding: 2.5rem 1rem; text-align: center;">
+                        <p id="confirm-message" style="font-size: 1.6rem; line-height: 1.6; color: var(--text-primary);"></p>
+                    </div>
+                    <div class="modal-footer" style="justify-content: flex-end; gap: 1rem; padding-top: 1rem;">
+                        <button id="confirm-cancel" class="btn btn-secondary">Cancelar</button>
+                        <button id="confirm-action" class="btn"></button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+
+            const actionBtn = document.getElementById('confirm-action');
+            actionBtn.textContent = confirmText;
+            actionBtn.className = `btn btn-${type}`;
+
+            const closeModal = () => {
+                modal.close();
+                resolve(false);
+            };
+
+            // Remove listeners antigos para evitar duplicatas
+            actionBtn.replaceWith(actionBtn.cloneNode(true));
+            const newActionBtn = document.getElementById('confirm-action');
+            newActionBtn.addEventListener('click', () => {
+                modal.close();
+                resolve(true);
+            });
+
+            document.getElementById('confirm-cancel').addEventListener('click', closeModal);
+            document.getElementById('confirm-close').addEventListener('click', closeModal);
+
+            modal.addEventListener('close', () => resolve(false), { once: true });
+            modal.showModal();
+        });
+    }
     // =======================================================
     // 2. FUNÇÕES AUXILIARES DE INTERFACE
     // =======================================================
@@ -6761,69 +6816,46 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // === LÓGICA DO BOTÃO REMOVER (melhorada) ===
         if (removeBtn) {
             removeBtn.addEventListener('click', async () => {
-                if (!confirm('Tem certeza que deseja remover a foto de perfil?')) return;
+                const confirmed = await showConfirmModal(
+                    'Remover Foto de Perfil',
+                    'Tem certeza que deseja remover sua foto de perfil? Esta ação não pode ser desfeita.',
+                    'Sim, remover',
+                    'danger'
+                );
 
-                if (avatarMenu) avatarMenu.style.display = 'none';
+                if (!confirmed) return;
 
                 const originalBtnText = removeBtn.innerHTML;
                 removeBtn.disabled = true;
                 removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
 
                 try {
-                    // 1. Cria um avatar padrão (fundo escuro com a inicial)
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 300;
-                    canvas.height = 300;
-                    const ctx = canvas.getContext('2d');
-                    
-                    ctx.fillStyle = '#1e293b'; 
-                    ctx.fillRect(0, 0, 300, 300);
-                    
-                    ctx.font = 'bold 120px Poppins, sans-serif';
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    const inicial = loggedInUser.nome ? loggedInUser.nome.charAt(0).toUpperCase() : 'U';
-                    ctx.fillText(inicial, 150, 160);
-
-                    // 2. Converte para arquivo JPG em memória
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                    const file = new File([blob], 'avatar_padrao.jpg', { type: 'image/jpeg' });
-
-                    // 3. Substitui a imagem atual enviando a nova para a API
-                    const formData = new FormData();
-                    formData.append('avatar', file);
-
                     const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
-                        method: 'POST',
+                        method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${authToken}`,
                             'Accept': 'application/json',
                             'ngrok-skip-browser-warning': 'true'
-                        },
-                        body: formData
+                        }
                     });
 
-                    if (!response.ok) throw new Error('Erro ao tentar remover a foto.');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Erro ao remover a foto.');
+                    }
 
-                    const result = await response.json();
-                    
-                    // 4. Atualiza a interface e o cache local
-                    const avatarUrlRetornada = result.avatar_url || result.data?.avatar_url || result.usuario?.avatar_url;
-                    
-                    loggedInUser.avatar_url = avatarUrlRetornada;
+                    loggedInUser.avatar_url = null;
                     delete loggedInUser.avatar_preview;
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    const localPreviewUrl = URL.createObjectURL(blob);
-                    setAvatarState(true, localPreviewUrl);
-
-                    showToast('Foto removida com sucesso!');
+                    setAvatarState(false);
+                    showToast('Foto de perfil removida com sucesso!', 'success');
 
                 } catch (error) {
-                    showToast(error.message, 'error');
+                    showToast(error.message || 'Não foi possível remover a foto.', 'error');
                 } finally {
                     removeBtn.disabled = false;
                     removeBtn.innerHTML = originalBtnText;
