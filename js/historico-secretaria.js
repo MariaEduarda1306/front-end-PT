@@ -314,11 +314,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    // Botão Filtrar
-    filterBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        renderStudentsTable();
-    });
+    const filterBtn = document.querySelector('.btn-primary');
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchStudents();        // ← Importante: usa fetchStudents
+        });
+    }
 
     // Suporte ao Enter
     const filterInputsSec = [
@@ -334,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    renderStudentsTable();
+                    fetchStudents();    // ← Importante: usa fetchStudents
                 }
             });
         }
@@ -348,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('curso').value = '';
             document.getElementById('data-inicio').value = '';
             document.getElementById('data-fim').value = '';
-            renderStudentsTable();
+            fetchStudents();           // ← Importante: usa fetchStudents
         });
     }
 
