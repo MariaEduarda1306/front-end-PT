@@ -6833,10 +6833,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const formData = new FormData();
-                    formData.append('_method', 'DELETE');   // ← Isso é o que o Laravel entende
+                    formData.append('_method', 'DELETE');
 
                     const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
-                        method: 'POST',                     // ← Mudado para POST
+                        method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${authToken}`,
                             'Accept': 'application/json',
