@@ -162,7 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fase').value = aluno.fase || '';
         
         const dataNascInput = document.getElementById('data_nascimento');
-        if (dataNascInput) dataNascInput.parentElement.classList.add('hidden'); 
+        if (dataNascInput) {
+            dataNascInput.value = aluno.data_nascimento || '';
+            dataNascInput.parentElement.classList.remove('hidden');
+        }
 
         const passwordGroup = document.getElementById('password-group');
         if (passwordGroup) passwordGroup.classList.remove('hidden');
@@ -199,8 +202,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const dataNascInput = document.getElementById('data_nascimento');
-        if (!isEditing && dataNascInput.value) {
-            data.data_nascimento = dataNascInput.value;
+
+        if (!dataNascInput || !dataNascInput.value) {
+            if (dataNascInput) toggleError(dataNascInput, true);
+            showToast('Informe a data de nascimento.', 'error');
+            return;
+        }
+
+        data.data_nascimento = dataNascInput.value;
+
+        if (!isEditing && dataNascInput && dataNascInput.value) {
             const [y, m, d] = data.data_nascimento.split('-');
             data.password = `${d}${m}${y}`;
         }

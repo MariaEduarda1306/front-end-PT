@@ -35,11 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. LISTAGEM E AGRUPAMENTO DE PENDÊNCIAS
+    // 2. LISTAGEM E AGRUPAMENTO DE SOLICITAÇÕES ENTREGUES
     // =======================================================
 
     async function fetchAndRenderStudents() {
-        studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando pendências...</td></tr>';
+        studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando solicitações entregues...</td></tr>';
         
         try {
             // Busca certificados com status ENTREGUE (o backend já filtra pelo curso do coordenador)
@@ -47,13 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
             });
             
-            if (!response.ok) throw new Error('Falha ao buscar pendências.');
+            if (!response.ok) throw new Error('Falha ao buscar solicitações entregues.');
 
             const result = await response.json();
             const pendingCertificates = result.data || result;
 
             if (!Array.isArray(pendingCertificates) || pendingCertificates.length === 0) {
-                studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma atividade pendente no momento.</td></tr>';
+                studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma solicitação entregue para validação no momento.</td></tr>';
                 return;
             }
 
@@ -99,12 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.style.cursor = 'pointer';
                 row.innerHTML = `
                     <td data-label="Notificação">
-                        <i class="fas fa-bell notification-bell" style="color:var(--status-ressalva)" title="Pendências"></i>
+                        <i class="fas fa-bell notification-bell" style="color:var(--status-ressalva)" title="Solicitação entregue para validação"></i>
                     </td>
                     <td data-label="Nome do Aluno"><strong>${aluno.nome}</strong></td>
                     <td data-label="Matrícula">${aluno.matricula}</td>
                     <td data-label="Fase">${aluno.fase || 'N/A'}</td>
-                    <td data-label="Pendências">
+                    <td data-label="Entregues para Validação">
                         <span class="status status-ressalva">${aluno.pending_count}</span>
                     </td>
                 `;
@@ -181,13 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
             accordionPlaceholder.innerHTML = '';
 
             if (!Array.isArray(certificados) || certificados.length === 0) {
-                accordionPlaceholder.innerHTML = '<p style="text-align:center;">Não há mais certificados pendentes para este aluno.</p>';
+                accordionPlaceholder.innerHTML = '<p style="text-align:center;">Não há mais solicitações entregues para validação deste aluno.</p>';
                 return;
             }
 
             certificados.forEach(cert => {
                 const statusInfo = getStatusInfo(cert.status);
-                const fileUrl = formatFileUrl(cert.arquivo_url);
                 const dataEnvio = new Date(cert.created_at).toLocaleDateString('pt-BR');
                 
                 const horasVal = cert.horas_validadas ?? cert.carga_horaria_solicitada;
@@ -235,7 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="preview-section">
                                 <h4>Comprovante</h4>
-                                <embed class="pdf-preview" src="${fileUrl}" type="application/pdf" />
+
+                                <div class="pdf-preview-area" data-cert-id="${cert.id}">
+                                    <div class="pdf-preview-state">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Carregando comprovante...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -243,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             setupAccordion();
+            carregarPreviewsPdf();
 
             // Ativa eventos nos botões de avaliar injetados
             document.querySelectorAll('.btn-avaliar').forEach(btn => {
@@ -261,19 +267,90 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. PROCESSAMENTO DA AVALIAÇÃO (PATCH)
     // =======================================================
 
+        async function carregarPreviewsPdf() {
+        const previewAreas = document.querySelectorAll('.pdf-preview-area[data-cert-id]');
+
+        for (const area of previewAreas) {
+            const certId = area.dataset.certId;
+
+            if (!certId) {
+                mostrarPreviewIndisponivel(area, 'ID do certificado não encontrado.');
+                continue;
+            }
+
+            const fileUrl = `${API_BASE_URL}/api/certificados/${certId}/arquivo`;
+
+            try {
+                const response = await fetch(fileUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/pdf,application/octet-stream,*/*',
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok) {
+                    throw new Error(`Erro ${response.status} ao carregar comprovante.`);
+                }
+
+                if (contentType.includes('text/html')) {
+                    throw new Error('O servidor retornou HTML em vez do PDF.');
+                }
+
+                const blob = await response.blob();
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                area.innerHTML = `
+                    <iframe
+                        class="pdf-preview"
+                        src="${pdfUrl}"
+                        title="Pré-visualização do comprovante">
+                    </iframe>
+
+                    <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-up-right-from-square"></i>
+                        Abrir comprovante em nova guia
+                    </a>
+                `;
+            } catch (error) {
+                console.warn('Erro ao carregar comprovante:', error);
+                mostrarPreviewIndisponivel(area, 'Não foi possível carregar o comprovante.');
+            }
+        }
+    }
+
+    function mostrarPreviewIndisponivel(area, mensagem) {
+        area.innerHTML = `
+            <div class="pdf-preview-unavailable">
+                <i class="fas fa-file-circle-exclamation"></i>
+                <strong>Comprovante indisponível</strong>
+                <span>${mensagem}</span>
+            </div>
+        `;
+    }
+
     async function handleEvaluation(certificateId, newStatus, studentId, studentName) {
         const panel = document.querySelector(`.validation-panel[data-cert-id="${certificateId}"]`);
         
+        const categoriaValue = panel.querySelector('.edit-categoria').value;
+        const categoriaId = parseInt(categoriaValue, 10);
+
         const payload = {
             status: newStatus,
-            horas_validadas: parseInt(panel.querySelector('.horas-validadas').value) || 0,
+            horas_validadas: parseInt(panel.querySelector('.horas-validadas').value, 10) || 0,
             observacao: panel.querySelector('.observacao').value || '',
-            categoria_id: parseInt(panel.querySelector('.edit-categoria').value) || null,
             nome_certificado: panel.querySelector('.edit-nome').value,
             instituicao: panel.querySelector('.edit-instituicao').value,
             data_emissao: panel.querySelector('.edit-data').value,
-            carga_horaria_solicitada: parseInt(panel.querySelector('.edit-carga').value) || 0
+            carga_horaria_solicitada: parseInt(panel.querySelector('.edit-carga').value, 10) || 0
         };
+
+        if (categoriaId) {
+            payload.categoria_id = categoriaId;
+        }
 
         if ((newStatus === 'REPROVADO' || newStatus === 'APROVADO_COM_RESSALVAS') && !payload.observacao.trim()) {
             showToast('Justificativa obrigatória para esta ação.', 'error');

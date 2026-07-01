@@ -79,11 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             coursesTableBody.appendChild(tr);
         });
-
-        // Eventos para botões dinâmicos
-        tr.querySelectorAll('.edit-course').forEach(btn => {
-            btn.addEventListener('click', () => openCourseModal(true, btn.dataset));
-        });
     }
 
     function openCourseModal(isEdit, data = {}) {
@@ -180,9 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="ID">#${cat.id}</td>
                 <td data-label="Categoria"><strong>${cat.nome}</strong></td>
                 <td class="action-cell">
-                    <button class="action-btn edit-category" data-id="${cat.id}" data-nome="${cat.nome}" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="action-btn delete-btn" data-type="categoria" data-id="${cat.id}" data-nome="${cat.nome}" title="Excluir">
                         <i class="fas fa-trash-alt"></i>
                     </button>
@@ -192,39 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function openCategoryModal(isEdit, data = {}) {
+    function openCategoryModal() {
         const idInput = document.getElementById('category-id');
         const nameInput = document.getElementById('category-name');
+
         toggleError(nameInput, false);
 
-        if (isEdit) {
-            categoryModalTitle.textContent = 'Editar Categoria';
-            idInput.value = data.id;
-            nameInput.value = data.nome;
-        } else {
-            categoryModalTitle.textContent = 'Adicionar Categoria';
-            categoryForm.reset();
+        categoryModalTitle.textContent = 'Adicionar Categoria';
+        categoryForm.reset();
+
+        if (idInput) {
             idInput.value = '';
         }
+
         categoryModal.showModal();
     }
 
-    categoryForm.addEventListener('submit', async (e) => {
+        categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const id = document.getElementById('category-id').value;
+
         const nameInput = document.getElementById('category-name');
-        
+
         if (!nameInput.value.trim()) {
             toggleError(nameInput, true);
             return showToast('Preencha o nome da categoria.', 'error');
         }
-        
-        const isEdit = !!id;
-        const url = isEdit ? `${API_BASE_URL}/api/categorias/${id}` : `${API_BASE_URL}/api/categorias`;
 
         try {
-            const response = await fetch(url, {
-                method: isEdit ? 'PUT' : 'POST',
+            const response = await fetch(`${API_BASE_URL}/api/categorias`, {
+                method: 'POST',
                 headers: { 
                     'Authorization': `Bearer ${authToken}`, 
                     'Content-Type': 'application/json',
@@ -235,11 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                showToast(`Categoria ${isEdit ? 'atualizada' : 'criada'}!`);
+                showToast('Categoria criada!');
                 categoryModal.close();
                 loadCategories();
+            } else {
+                const err = await response.json();
+                showToast(err.message || 'Erro ao criar categoria.', 'error');
             }
-        } catch (error) { showToast('Erro de conexão.', 'error'); }
+        } catch (error) {
+            showToast('Erro de conexão.', 'error');
+        }
     });
 
     // =======================================================
@@ -256,9 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteModal.showModal();
         }
         
-        const editCatBtn = e.target.closest('.edit-category');
-        if (editCatBtn) openCategoryModal(true, editCatBtn.dataset);
-
         const editCourseBtn = e.target.closest('.edit-course');
         if (editCourseBtn) openCourseModal(true, editCourseBtn.dataset);
     });
@@ -283,9 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =======================================================
-    // 5. INTEGRAÇÕES, IMPORTAÇÃO E EXPORTAÇÃO
+    // 5. INTEGRAÇÕES E CONFIGURAÇÕES GLOBAIS
     // =======================================================
-    
+    const horasMinimasInput = document.getElementById('horas-minimas');
+    const modoManutencaoSelect = document.getElementById('modo-manutencao');
+
     async function loadIntegrations() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/configuracoes`, {
@@ -295,6 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const config = await response.json();
                 if (apiUrlInput) apiUrlInput.value = config.api_url || '';
                 if (apiKeyInput) apiKeyInput.value = config.api_key || '';
+                if (horasMinimasInput) horasMinimasInput.value = config.horas_minimas || '200';
+                
+                if (modoManutencaoSelect) {
+                    const isManutencao = config.modo_manutencao === 'true' || config.modo_manutencao === true;
+                    modoManutencaoSelect.value = isManutencao ? 'true' : 'false';
+                    
+                    const triggerSpan = modoManutencaoSelect.nextElementSibling?.querySelector('.custom-select-trigger span');
+                    if (triggerSpan) triggerSpan.textContent = isManutencao ? 'Ativado (Envios Suspensos)' : 'Desativado (Funcionamento Normal)';
+                }
             }
         } catch (e) { console.warn("Erro ao carregar configs:", e); }
     }
@@ -316,8 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     api_url: apiUrlInput.value,
                     api_key: apiKeyInput.value,
-                    horas_minimas: 200, 
-                    modo_manutencao: false
+                    horas_minimas: horasMinimasInput ? parseInt(horasMinimasInput.value) : 200, 
+                    modo_manutencao: modoManutencaoSelect ? (modoManutencaoSelect.value === 'true') : false
                 })
             });
             if (response.ok) showToast('Configurações salvas!');
@@ -342,14 +343,16 @@ document.addEventListener('DOMContentLoaded', () => {
             btnRunImport.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
 
             try {
-                // Passo 1: Busca no legado
                 const respLegado = await fetch(externalUrl, {
                     headers: { 'x-api-key': externalKey, 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (!respLegado.ok) throw new Error('Falha ao conectar com sistema legado.');
                 const dadosLegado = await respLegado.json();
 
-                // Passo 2: Envia para o nosso Backend
+                const payloadImportacao = Array.isArray(dadosLegado)
+                    ? { usuarios: dadosLegado }
+                    : dadosLegado;
+
                 const respImport = await fetch(`${API_BASE_URL}/api/usuarios/import`, {
                     method: 'POST',
                     headers: { 
@@ -358,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Accept': 'application/json',
                         'ngrok-skip-browser-warning': 'true'
                     },
-                    body: JSON.stringify(dadosLegado)
+                    body: JSON.stringify(payloadImportacao)
                 });
 
                 if (respImport.ok) showToast('Importação concluída com sucesso!');
@@ -381,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnExportCerts.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/certificados/export`, {
+                const response = await fetch(`${API_BASE_URL}/api/certificados/exportar/externo`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (!response.ok) throw new Error('Falha na exportação.');
@@ -408,9 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     
     btnAddCourse.addEventListener('click', () => openCourseModal(false));
-    btnAddCategory.addEventListener('click', () => openCategoryModal(false));
+    btnAddCategory.addEventListener('click', () => openCategoryModal());
 
-    // Fechar modais ao clicar no X ou fora
     document.querySelectorAll('.close-btn').forEach(btn => {
         btn.addEventListener('click', () => btn.closest('dialog').close());
     });
@@ -419,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
     });
 
-    // Limpar erros ao digitar em qualquer form
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => toggleError(input, false));
     });
@@ -428,4 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCourses();
     loadCategories();
     loadIntegrations();
+    
+    // Inicia select customizado
+    if (modoManutencaoSelect) setupCustomSelect(modoManutencaoSelect.nextElementSibling);
 });

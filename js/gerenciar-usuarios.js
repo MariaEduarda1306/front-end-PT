@@ -244,7 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validações Básicas usando Utils
         if (!fields.nome.value.trim()) { toggleError(fields.nome, true); hasError = true; }
         if (!fields.email.value.trim()) { toggleError(fields.email, true); hasError = true; }
-        if (!fields.matricula.value.trim()) { toggleError(fields.matricula, true); hasError = true; }
+        if (papelSelect.value === 'ALUNO' && !fields.matricula.value.trim()) {
+            toggleError(fields.matricula, true);
+            hasError = true;
+        }
         if (!papelSelect.value) { toggleError(papelSelect, true); hasError = true; }
 
         const cpfRaw = fields.cpf.value.replace(/\D/g, '');
