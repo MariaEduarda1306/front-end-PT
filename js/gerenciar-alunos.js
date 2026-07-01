@@ -105,6 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Selecionar o botão Filtrar
+    const filterBtn = document.getElementById('filter-btn') || document.querySelector('.btn-primary');
+
     // Eventos dos Filtros com suporte ao Enter
     if (filterBtn) {
         filterBtn.addEventListener('click', (e) => {

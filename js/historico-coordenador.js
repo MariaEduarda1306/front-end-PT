@@ -509,7 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicialização
     (async () => {
-        await fetchCategorias();
         await fetchStudents();
         
         const faseWrapper = document.querySelector('.custom-select-wrapper');
