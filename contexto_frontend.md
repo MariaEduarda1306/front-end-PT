@@ -242,7 +242,7 @@ Este arquivo contém a estrutura e o código-fonte principal do frontend do proj
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
                 <button id="btn-export-certs" class="btn btn-primary">
-                    <i class="fas fa-file-export"></i> Exportar Certificados (JSON)
+                    <i class="fas fa-file-export"></i> Enviar Certificados (API)
                 </button>
 
                 <button id="btn-run-import" class="btn btn-secondary">
@@ -4239,31 +4239,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Exportação de Certificados (JSON)
+    // Exportação de Certificados (API Externa)
     const btnExportCerts = document.getElementById('btn-export-certs');
     if (btnExportCerts) {
         btnExportCerts.addEventListener('click', async () => {
+            const externalUrl = apiUrlInput.value.trim();
+            const externalKey = apiKeyInput.value.trim();
+
+            // Valida se as credenciais da API Externa foram preenchidas (mesmo comportamento da importação)
+            if (!externalUrl || !externalKey) return showToast('Configure a API Legada antes de exportar.', 'error');
+
             const originalText = btnExportCerts.innerHTML;
             btnExportCerts.disabled = true;
-            btnExportCerts.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+            btnExportCerts.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exportando...';
 
             try {
+                // 1. Busca os certificados da nossa API local
                 const response = await fetch(`${API_BASE_URL}/api/certificados/exportar/externo`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
-                if (!response.ok) throw new Error('Falha na exportação.');
+                
+                if (!response.ok) throw new Error('Falha ao buscar dados locais para exportação.');
 
-                const data = await response.json();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `shc_export_${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-                window.URL.revokeObjectURL(url);
-                showToast('Exportação concluída!');
-            } catch (error) { showToast(error.message, 'error'); }
-            finally {
+                const dadosExportacao = await response.json();
+
+                // 2. Envia os certificados diretamente para a API Legada Externa
+                const respLegado = await fetch(externalUrl, {
+                    method: 'POST', // Pode ser alterado para PUT dependendo do padrão da sua API externa
+                    headers: { 
+                        'x-api-key': externalKey, 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify(dadosExportacao)
+                });
+
+                if (!respLegado.ok) throw new Error('Falha ao enviar os dados para o sistema legado.');
+
+                showToast('Exportação concluída com sucesso!');
+            } catch (error) { 
+                showToast(error.message, 'error'); 
+            } finally {
+                // Restaura o botão
                 btnExportCerts.disabled = false;
                 btnExportCerts.innerHTML = originalText;
             }
@@ -6320,7 +6337,8 @@ document.addEventListener('DOMContentLoaded', () => {
         avatarWrapper.classList.toggle('has-photo', hasPhoto);
 
         if (removeBtn) {
-            removeBtn.classList.add('hidden');
+            // Só esconde se não tiver foto. Se tiver, ele aparece.
+            removeBtn.classList.toggle('hidden', !hasPhoto);
         }
         
         if (hasPhoto && url) {
@@ -6704,23 +6722,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (avatarUrlRetornada) {
                         loggedInUser.avatar_url = avatarUrlRetornada;
-                        delete loggedInUser.avatar_preview;
                     }
 
+                    // Guarda a pré-visualização local no cache do navegador
+                    // Isto impede que a imagem fique em branco nas próximas navegações rápidas
+                    loggedInUser.avatar_preview = localPreview;
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    let finalAvatarUrl = localPreview;
-
-                    try {
-                        finalAvatarUrl = await resolveAvatarDisplayUrl() || localPreview;
-                    } catch (error) {
-                        loggedInUser.avatar_preview = localPreview;
-                        localStorage.setItem('userData', JSON.stringify(loggedInUser));
-                    }
-
-                    setAvatarState(true, finalAvatarUrl);
+                    // Mantém a imagem que o utilizador escolheu visível na tela
+                    // sem forçar uma nova requisição ao servidor
+                    setAvatarState(true, localPreview);
 
                     showToast('Foto de perfil atualizada!');
+
                 } catch (error) {
                     Object.keys(loggedInUser).forEach(key => delete loggedInUser[key]);
                     Object.assign(loggedInUser, previousUserData);
@@ -6748,7 +6762,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (removeBtn) {
-            removeBtn.classList.add('hidden');
+            removeBtn.addEventListener('click', async () => {
+                if (!confirm('Tem certeza que deseja remover a foto de perfil?')) return;
+
+                if (avatarMenu) avatarMenu.style.display = 'none';
+
+                const originalBtnText = removeBtn.innerHTML;
+                removeBtn.disabled = true;
+                removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
+
+                try {
+                    // 1. Cria um avatar padrão (fundo escuro com a inicial)
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 300;
+                    canvas.height = 300;
+                    const ctx = canvas.getContext('2d');
+                    
+                    ctx.fillStyle = '#1e293b'; 
+                    ctx.fillRect(0, 0, 300, 300);
+                    
+                    ctx.font = 'bold 120px Poppins, sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const inicial = loggedInUser.nome ? loggedInUser.nome.charAt(0).toUpperCase() : 'U';
+                    ctx.fillText(inicial, 150, 160);
+
+                    // 2. Converte para arquivo JPG em memória
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                    const file = new File([blob], 'avatar_padrao.jpg', { type: 'image/jpeg' });
+
+                    // 3. Substitui a imagem atual enviando a nova para a API
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+
+                    const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Accept': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Erro ao tentar remover a foto.');
+
+                    const result = await response.json();
+                    
+                    // 4. Atualiza a interface e o cache local
+                    const avatarUrlRetornada = result.avatar_url || result.data?.avatar_url || result.usuario?.avatar_url;
+                    
+                    loggedInUser.avatar_url = avatarUrlRetornada;
+                    delete loggedInUser.avatar_preview;
+                    localStorage.setItem('userData', JSON.stringify(loggedInUser));
+
+                    const localPreviewUrl = URL.createObjectURL(blob);
+                    setAvatarState(true, localPreviewUrl);
+
+                    showToast('Foto removida com sucesso!');
+
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    removeBtn.disabled = false;
+                    removeBtn.innerHTML = originalBtnText;
+                }
+            });
         }
     }
 
