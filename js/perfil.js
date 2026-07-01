@@ -526,13 +526,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
 
                 try {
+                    const formData = new FormData();
+                    formData.append('_method', 'DELETE');
+
                     const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
-                        method: 'POST',  // Mantemos POST
+                        method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${authToken}`,
                             'Accept': 'application/json',
                             'ngrok-skip-browser-warning': 'true'
-                        }
+                        },
+                        body: formData
                     });
 
                     if (!response.ok) {
