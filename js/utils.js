@@ -4,33 +4,101 @@
 // 1. CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // =======================================================
 
-/**
- * Define a URL base da API de forma dinâmica.
- *
- * Como usar com ngrok:
- * Abra uma vez:
- * index.html?api=https://SEU-LINK.ngrok-free.app
- *
- * Depois o link fica salvo no localStorage.
- */
 const urlParams = new URLSearchParams(window.location.search);
 const apiFromUrl = urlParams.get('api');
 
+const isLocalFrontend =
+    ['localhost', '127.0.0.1', ''].includes(window.location.hostname) ||
+    window.location.protocol === 'file:';
+
+const LOCAL_API_URL = 'http://localhost:8000';
+
+const PRODUCTION_API_URL = 'https://panoramic-figure-mushroom.ngrok-free.dev';
+
+let savedApiUrl = localStorage.getItem('API_BASE_URL');
+
 if (apiFromUrl) {
-    localStorage.setItem('API_BASE_URL', apiFromUrl.replace(/\/$/, ''));
+    savedApiUrl = apiFromUrl.replace(/\/$/, '');
+    localStorage.setItem('API_BASE_URL', savedApiUrl);
 }
 
-const API_BASE_URL =
-    localStorage.getItem('API_BASE_URL') ||
-    (
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname === 'localhost'
-            ? 'http://localhost:8000'
-            : 'https://panoramic-figure-mushroom.ngrok-free.dev'
-    );
+if (!savedApiUrl || savedApiUrl.includes('localhost') || savedApiUrl.includes('127.0.0.1')) {
+    savedApiUrl = isLocalFrontend ? LOCAL_API_URL : PRODUCTION_API_URL;
+    localStorage.setItem('API_BASE_URL', savedApiUrl);
+}
+
+const API_BASE_URL = savedApiUrl.replace(/\/$/, '');
 
 const authToken = localStorage.getItem('authToken');
 const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
+
+// =======================================================
+// CONTROLE DE ACESSO POR PERFIL
+// =======================================================
+
+const ROTAS_POR_PERFIL = {
+    ALUNO: 'dashboard-alunos.html',
+    COORDENADOR: 'dashboard-coordenador.html',
+    SECRETARIA: 'dashboard-secretaria.html',
+    ADMINISTRADOR: 'dashboard-administrador.html'
+};
+
+const PERFIS_POR_PAGINA = {
+    'dashboard-alunos.html': ['ALUNO'],
+    'cadastro-horas.html': ['ALUNO'],
+    'historico-aluno.html': ['ALUNO'],
+    'perfil-alunos.html': ['ALUNO'],
+
+    'dashboard-coordenador.html': ['COORDENADOR'],
+    'validar-horas.html': ['COORDENADOR'],
+    'historico-coordenador.html': ['COORDENADOR'],
+    'perfil-coordenador.html': ['COORDENADOR'],
+
+    'dashboard-secretaria.html': ['SECRETARIA'],
+    'gerenciar-alunos.html': ['SECRETARIA'],
+    'historico-secretaria.html': ['SECRETARIA'],
+    'perfil-secretaria.html': ['SECRETARIA'],
+
+    'dashboard-administrador.html': ['ADMINISTRADOR'],
+    'gerenciar-usuarios.html': ['ADMINISTRADOR'],
+    'configuracoes-sistema.html': ['ADMINISTRADOR'],
+    'perfil-administrador.html': ['ADMINISTRADOR']
+};
+
+function obterPaginaAtual() {
+    const path = window.location.pathname;
+    return path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+}
+
+function redirecionarParaDashboardDoPerfil() {
+    const tipo = loggedInUser?.tipo;
+    const dashboard = ROTAS_POR_PERFIL[tipo] || 'index.html';
+    window.location.href = dashboard;
+}
+
+function verificarPerfilDaPagina() {
+    const paginaAtual = obterPaginaAtual();
+
+    if (paginaAtual === 'index.html' || paginaAtual === 'login.html' || paginaAtual === '') {
+        return;
+    }
+
+    const perfisPermitidos = PERFIS_POR_PAGINA[paginaAtual];
+
+    if (!perfisPermitidos) {
+        return;
+    }
+
+    const tipoUsuario = loggedInUser?.tipo;
+
+    if (!tipoUsuario || !perfisPermitidos.includes(tipoUsuario)) {
+        showToast('Você não tem permissão para acessar esta página.', 'error');
+
+        setTimeout(() => {
+            redirecionarParaDashboardDoPerfil();
+        }, 800);
+    }
+}
 
 /**
  * Verifica se o usuário possui um token. Caso contrário, redireciona para o login.
@@ -38,12 +106,18 @@ const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
 function verificarAutenticacao() {
     if (!authToken) {
         const path = window.location.pathname;
-        if (!path.endsWith('index.html') && path !== '/') {
-            window.location.href = 'index.html';
+
+        if (!path.endsWith('index.html') && !path.endsWith('login.html') && path !== '/') {
+            window.location.href = 'login.html';
+            return false;
         }
     }
+
+    return true;
 }
-verificarAutenticacao();
+if (verificarAutenticacao()) {
+    verificarPerfilDaPagina();
+}
 
 // =======================================================
 // 2. TRATAMENTO DE DADOS E FORMATAÇÃO
@@ -55,19 +129,36 @@ verificarAutenticacao();
 function formatFileUrl(rawPath) {
     if (!rawPath) return '';
 
+    const apiBase = API_BASE_URL.replace(/\/$/, '');
+
     if (rawPath.startsWith('http')) {
         try {
             const url = new URL(rawPath);
-            const path = url.pathname;
 
-            if (path.startsWith('/storage/')) {
-                return `${API_BASE_URL}${path}`;
+            // Se a API devolver um link absoluto do próprio backend,
+            // reconstrói usando o API_BASE_URL correto, com https.
+            if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/storage/')) {
+                return `${apiBase}${url.pathname}${url.search}`;
+            }
+
+            // Proteção extra para ngrok
+            if (url.hostname.includes('ngrok-free.dev') || url.hostname.includes('ngrok-free.app')) {
+                url.protocol = 'https:';
+                return url.toString();
             }
 
             return rawPath;
         } catch (e) {
             return rawPath;
         }
+    }
+
+    if (rawPath.startsWith('/api/') || rawPath.startsWith('/storage/')) {
+        return `${apiBase}${rawPath}`;
+    }
+
+    if (rawPath.startsWith('api/') || rawPath.startsWith('storage/')) {
+        return `${apiBase}/${rawPath}`;
     }
 
     let cleanPath = rawPath
@@ -78,7 +169,7 @@ function formatFileUrl(rawPath) {
         cleanPath = cleanPath.substring(1);
     }
 
-    return `${API_BASE_URL}/storage/${cleanPath}`;
+    return `${apiBase}/storage/${cleanPath}`;
 }
 
 /**
@@ -178,6 +269,23 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.remove();
     }, 5000);
+}
+
+async function getApiErrorMessage(response, fallback = 'Erro na operação.') {
+    try {
+        const data = await response.json();
+
+        if (data.errors) {
+            return Object.values(data.errors).flat().join('\n');
+        }
+
+        return data.message || fallback;
+    } catch {
+        if (response.status === 403) return 'Você não tem permissão para esta ação.';
+        if (response.status === 422) return 'Verifique os dados enviados.';
+        if (response.status === 401) return 'Sessão expirada. Faça login novamente.';
+        return fallback;
+    }
 }
 
 // =======================================================
@@ -314,7 +422,7 @@ function setupFileInputs() {
 function configurarAjudaContextual() {
     const path = decodeURI(window.location.pathname).toLowerCase();
 
-    if (path.includes('manual.html') || path.includes('index.html') || path === '/') return;
+    if ( path.includes('manual.html') || path.includes('index.html') || path.includes('login.html') || path === '/') return;
 
     const helpBtn = document.createElement('a');
     helpBtn.className = 'floating-help-btn';
@@ -323,21 +431,26 @@ function configurarAjudaContextual() {
 
     let anchor = '#comum';
 
-    if (path.includes('cadastro de horas')) anchor = '#aluno-cadastrar';
-    else if (path.includes('histórico aluno')) anchor = '#aluno-historico';
-    else if (path.includes('validar horas')) anchor = '#coord-validar';
-    else if (path.includes('histórico coordenador')) anchor = '#coord-historico';
-    else if (path.includes('histórico secretaria')) anchor = '#secretaria-historico';
-    else if (path.includes('gerenciar alunos')) anchor = '#secretaria-gerenciar';
-    else if (path.includes('gerenciar usuarios')) anchor = '#admin-usuarios';
-    else if (path.includes('configurações')) anchor = '#admin-config';
-    else if (path.includes('dashboard alunos')) anchor = '#aluno-dashboard';
-    else if (path.includes('dashboard coordenador')) anchor = '#coord-dashboard';
-    else if (path.includes('dashboard secretaria')) anchor = '#secretaria-dashboard';
-    else if (path.includes('dashboard administrador')) anchor = '#admin-dashboard';
+    if (path.includes('cadastro-horas')) anchor = '#aluno-cadastrar';
+    else if (path.includes('historico-aluno')) anchor = '#aluno-historico';
+    else if (path.includes('validar-horas')) anchor = '#coord-validar';
+    else if (path.includes('historico-coordenador')) anchor = '#coord-historico';
+    else if (path.includes('historico-secretaria')) anchor = '#secretaria-historico';
+    else if (path.includes('gerenciar-alunos')) anchor = '#secretaria-gerenciar';
+    else if (path.includes('gerenciar-usuarios')) anchor = '#admin-usuarios';
+    else if (path.includes('configuracoes')) anchor = '#admin-config';
+    else if (path.includes('dashboard-alunos')) anchor = '#aluno-dashboard';
+    else if (path.includes('dashboard-coordenador')) anchor = '#coord-dashboard';
+    else if (path.includes('dashboard-secretaria')) anchor = '#secretaria-dashboard';
+    else if (path.includes('dashboard-administrador')) anchor = '#admin-dashboard';
     else if (path.includes('perfil')) anchor = '#perfil';
 
     helpBtn.href = `manual.html${anchor}`;
+
+    helpBtn.addEventListener('click', () => {
+        sessionStorage.setItem('manualReturnUrl', window.location.href);
+    });
+
     document.body.appendChild(helpBtn);
 }
 
@@ -356,4 +469,67 @@ document.addEventListener('click', e => {
             wrapper.classList.remove('open');
         }
     });
+});
+
+// =======================================================
+// PRÉ-CARREGAMENTO DE PÁGINAS INTERNAS
+// =======================================================
+
+function preCarregarPaginasInternas() {
+    if (!authToken || !loggedInUser?.tipo) return;
+
+    const paginasPorPerfil = {
+        ALUNO: [
+            'dashboard-alunos.html',
+            'cadastro-horas.html',
+            'historico-aluno.html',
+            'perfil-alunos.html',
+            'manual.html'
+        ],
+
+        COORDENADOR: [
+            'dashboard-coordenador.html',
+            'validar-horas.html',
+            'historico-coordenador.html',
+            'perfil-coordenador.html',
+            'manual.html'
+        ],
+
+        SECRETARIA: [
+            'dashboard-secretaria.html',
+            'gerenciar-alunos.html',
+            'historico-secretaria.html',
+            'perfil-secretaria.html',
+            'manual.html'
+        ],
+
+        ADMINISTRADOR: [
+            'dashboard-administrador.html',
+            'gerenciar-usuarios.html',
+            'configuracoes-sistema.html',
+            'perfil-administrador.html',
+            'manual.html'
+        ]
+    };
+
+    const paginas = paginasPorPerfil[loggedInUser.tipo] || [];
+    const paginaAtual = obterPaginaAtual();
+
+    paginas
+        .filter(pagina => pagina !== paginaAtual)
+        .forEach(pagina => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = pagina;
+            link.as = 'document';
+            document.head.appendChild(link);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(preCarregarPaginasInternas);
+    } else {
+        setTimeout(preCarregarPaginasInternas, 1000);
+    }
 });

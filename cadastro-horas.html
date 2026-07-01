@@ -17,7 +17,7 @@
 <body class="theme-default">
     
     <!-- Componente de Header Injetado via JS -->
-    <header id="app-header" data-back-url="dashboard%20alunos.html"></header>
+    <header id="app-header" data-back-url="dashboard-alunos.html"></header>
 
     <main class="main-container form-container">
         <div class="form-card">
@@ -57,10 +57,48 @@
 
                 <div class="form-group">
                     <label for="data_emissao">Data de Emissão do Certificado</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-calendar-alt prefix-icon"></i>
-                        
-                        <input type="date" id="data_emissao" name="data_emissao" required>
+
+                    <div class="date-picker-wrapper" id="data-emissao-picker">
+                        <input type="hidden" id="data_emissao" name="data_emissao">
+
+                        <button type="button" class="date-picker-trigger">
+                            <i class="fas fa-calendar-days" aria-hidden="true"></i>
+                            <span id="data_emissao_text">dd/mm/aaaa</span>
+                        </button>
+
+                        <div class="shc-calendar" hidden>
+                            <div class="shc-calendar-header">
+                                <button type="button" class="shc-calendar-nav" data-action="prev">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+
+                                <button type="button" class="shc-calendar-title">
+                                    <span class="shc-calendar-month-label"></span>
+                                    <span class="shc-calendar-year-label"></span>
+                                </button>
+
+                                <button type="button" class="shc-calendar-nav" data-action="next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="shc-calendar-weekdays">
+                                <span>D</span>
+                                <span>S</span>
+                                <span>T</span>
+                                <span>Q</span>
+                                <span>Q</span>
+                                <span>S</span>
+                                <span>S</span>
+                            </div>
+
+                            <div class="shc-calendar-days"></div>
+
+                            <div class="shc-calendar-footer">
+                                <button type="button" class="shc-calendar-clear">Limpar</button>
+                                <button type="button" class="shc-calendar-today">Hoje</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -77,7 +115,7 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard alunos.html'">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard-alunos.html'">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Enviar</button>
                 </div>
             </form>

@@ -3,10 +3,13 @@
    ========================================================================== */
 
 /* --- Cabeçalho (Header) --- */
-.header {
-    padding: 1.5rem 2.0rem;
-    display: flex;
-    justify-content: space-between;
+.header,
+#app-header {
+    min-height: 8.1rem;
+    box-sizing: border-box;
+    padding: 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
     align-items: center;
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
@@ -18,14 +21,34 @@
     gap: 1.5rem;
 }
 
+@media (min-width: 768px) {
+    #app-header {
+        min-height: 9.1rem;
+        padding: 2rem 4rem;
+    }
+}
+
+.header > :first-child {
+    justify-self: start;
+}
+
 .header .logo { 
+    grid-column: 2;
+    justify-self: center;
     font-weight: 600; 
     font-size: 1.8rem; 
     white-space: nowrap;
-    flex-shrink: 1;
     min-width: 0;
 }
 
+.header > :last-child {
+    justify-self: end;
+}
+
+.header-spacer {
+    width: 12rem;
+    height: 1px;
+}
 
 .header .logo img.header-logo {
     height: 5rem; 
@@ -229,20 +252,21 @@ tbody tr:hover { background-color: var(--primary-glow-transparent); }
     gap: 3rem;
 }
 .option-card {
-    background: var(--glass-bg-light); border: 1px solid var(--glass-border);
-    border-radius: 1.6rem; padding: 3rem; text-align: center;
-    backdrop-filter: blur(10px); transition: all 0.3s ease;
-    text-decoration: none; color: inherit; animation: fadeInUp 0.5s ease-out forwards;
-    opacity: 0;
+    background: var(--glass-bg-light);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.6rem;
+    padding: 3rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    text-decoration: none;
+    color: inherit;
 }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.option-card:nth-child(1) { animation-delay: 0.1s; }
-.option-card:nth-child(2) { animation-delay: 0.2s; }
-.option-card:nth-child(3) { animation-delay: 0.3s; }
-.option-card:nth-child(4) { animation-delay: 0.4s; }
+
 .option-card:hover {
-    transform: translateY(-1rem); border-color: var(--primary-glow);
-    box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    transform: translateY(-0.4rem);
+    border-color: var(--primary-glow);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.22);
 }
 .option-card .icon {
     font-size: 4em; margin-bottom: 2rem; background: var(--primary-gradient);
@@ -310,6 +334,23 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 .form-group.hidden { display: none; }
 .modal-footer { display: flex; flex-direction: column-reverse; gap: 1.5rem; margin-top: 6rem; }
 .modal-footer .btn {min-width: 12rem; justify-content: center; flex-grow: 0; font-size: 1.5rem;}
+.hidden { display: none !important;}
+.modal-error-message { width: 100%; margin: 1rem 0 1.5rem 0; padding: 1rem 1.2rem; border-radius: 0.8rem; border: 1px solid rgba(255, 80, 80, 0.45); background: rgba(255, 80, 80, 0.12); color: #ffb3b3; font-size: 1.35rem; line-height: 1.5;}
+/* --- Ajuste específico do modal de alteração de senha --- */
+.password-modal { width: min(54rem, calc(100vw - 3rem)); max-width: 54rem; max-height: calc(100vh - 4rem); overflow-y: auto; padding: 2.5rem; z-index: 9999;}
+.password-modal::backdrop { background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);}
+.password-modal .modal-footer { display: flex; flex-direction: row; justify-content: flex-end; gap: 1.2rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--glass-border);}
+.password-modal .modal-footer .btn { flex-grow: 0;  min-width: 12rem;}
+.password-modal-error { width: 100%; margin: 1rem 0 1.5rem 0; padding: 1rem 1.2rem; border-radius: 0.8rem; border: 1px solid rgba(255, 80, 80, 0.55); background: rgba(255, 80, 80, 0.14); color: #ffb3b3; font-size: 1.35rem; line-height: 1.5;}
+@media (max-width: 600px) {
+    .password-modal .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .password-modal .modal-footer .btn {
+        width: 100%;
+    }
+}
 
 /* --- Badges --- */
 .status, .role-badge { padding: 0.5rem 1.2rem; border-radius: 1.2rem; font-weight: 600; font-size: 1.2rem; }
@@ -358,39 +399,38 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 .confirmation-message { text-align: center; }
 .confirmation-message i { font-size: 4.8rem; color: var(--primary-glow); margin-bottom: 2rem; }
 
-/* Destaque para o link de primeiro acesso */
+/* Link discreto para primeiro acesso */
 #first-access-link {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: 0.7rem;
 
-    width: 100%;
-    box-sizing: border-box;
-    margin-top: 2rem;
-    padding: 1.2rem 1.5rem;
+    width: auto;
+    max-width: 100%;
+    margin: 1.6rem auto 0 auto;
+    padding: 0.8rem 1.2rem;
 
-    background-color: var(--primary-glow-transparent);
-    border: 1px solid var(--primary-glow);
-    border-radius: 0.8rem;
+    background-color: transparent;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 999px;
 
-    color: var(--text-primary);
-    font-size: 1.35rem;
-    line-height: 1.5;
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    line-height: 1.4;
     text-decoration: none;
 
     transition:
-        background-color 0.3s ease,
-        box-shadow 0.3s ease,
-        transform 0.3s ease;
-
-    animation: first-access-pulse 1.8s ease-in-out 2;
+        color 0.3s ease,
+        border-color 0.3s ease,
+        background-color 0.3s ease;
 }
 
 #first-access-link i {
     flex-shrink: 0;
     color: var(--primary-glow);
-    font-size: 1.8rem;
+    font-size: 1.3rem;
+    opacity: 0.85;
 }
 
 #first-access-link strong {
@@ -401,35 +441,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 #first-access-link:hover {
     color: var(--text-primary);
     text-decoration: none;
-    background-color: rgba(0, 170, 255, 0.16);
-    box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.55);
+    background-color: rgba(56, 189, 248, 0.06);
 }
 
 /* Diminui o espaço do link de recuperação de senha */
 #forgot-password-link {
     margin-top: 1.5rem;
-}
-
-/* Chama atenção suavemente ao abrir a tela */
-@keyframes first-access-pulse {
-    0%,
-    100% {
-        box-shadow: 0 0 0 rgba(0, 170, 255, 0);
-    }
-
-    50% {
-        box-shadow:
-            0 0 0 4px rgba(0, 170, 255, 0.08),
-            0 0 18px rgba(0, 170, 255, 0.28);
-    }
-}
-
-/* Respeita usuários que desativam animações */
-@media (prefers-reduced-motion: reduce) {
-    #first-access-link {
-        animation: none;
-    }
 }
 
 /* --- Componente de Perfil --- */
@@ -942,3 +960,495 @@ input:-webkit-autofill:active {
 
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+    overflow-y: scroll;
+}
+
+.main-container,
+.dashboard-container,
+.form-container,
+.profile-container {
+    opacity: 1;
+    transform: none;
+    animation: none;
+}
+
+/* --- Preview seguro de comprovantes PDF --- */
+.pdf-preview-area {
+    width: 100%;
+    min-height: 32rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--glass-border);
+    background: var(--background-light);
+    overflow: hidden;
+}
+
+.pdf-preview {
+    width: 100%;
+    height: 32rem;
+    border: none;
+    display: block;
+    background: #ffffff;
+}
+
+.pdf-preview-state,
+.pdf-preview-unavailable {
+    min-height: 32rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    color: var(--text-secondary);
+    gap: 1rem;
+}
+
+.pdf-preview-state i,
+.pdf-preview-unavailable i {
+    font-size: 3rem;
+    color: var(--primary-glow);
+}
+
+.pdf-preview-unavailable strong {
+    color: var(--text-primary);
+    font-size: 1.6rem;
+}
+
+.pdf-preview-unavailable span {
+    max-width: 34rem;
+    font-size: 1.35rem;
+    line-height: 1.5;
+}
+
+.pdf-open-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+
+    margin-top: 1rem;
+    color: var(--primary-glow);
+    font-size: 1.35rem;
+    text-decoration: none;
+}
+
+.pdf-open-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Calendário customizado SHC --- */
+
+.date-picker-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.date-picker-trigger {
+    width: 100%;
+    height: 4.7rem;
+    padding: 0 1.2rem;
+    padding-left: 4.5rem;
+
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    background-color: var(--background-light);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.8rem;
+
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.6rem;
+    text-align: left;
+
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.date-picker-trigger i {
+    position: absolute;
+    left: 1.5rem;
+    color: var(--primary-glow);
+    font-size: 1.6rem;
+}
+
+.date-picker-trigger:hover,
+.date-picker-trigger:focus {
+    border-color: var(--primary-glow);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
+    outline: none;
+}
+
+.date-picker-trigger.input-error {
+    border-color: var(--status-reprovado) !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
+}
+
+.shc-calendar {
+    position: absolute;
+    top: calc(100% + 0.8rem);
+    left: 0;
+    z-index: 20000;
+
+    width: min(31rem, 100%);
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 1.4rem;
+
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.2rem;
+    box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(12px);
+}
+
+.shc-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.shc-calendar-title {
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+
+    padding: 0.6rem 1rem;
+    border-radius: 0.8rem;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.shc-calendar-title:hover {
+    background: var(--primary-glow-transparent);
+    color: var(--primary-glow);
+}
+
+.shc-calendar-year-label {
+    color: var(--primary-glow);
+}
+
+.shc-calendar-nav {
+    width: 3.2rem;
+    height: 3.2rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 0.8rem;
+    background: var(--background-light);
+    color: var(--text-secondary);
+    cursor: pointer;
+
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.shc-calendar-nav:hover {
+    background: var(--primary-glow-transparent);
+    color: var(--primary-glow);
+}
+
+.shc-calendar-weekdays,
+.shc-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.4rem;
+}
+
+.shc-calendar-weekdays {
+    margin-bottom: 0.6rem;
+}
+
+.shc-calendar-weekdays span {
+    text-align: center;
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.shc-calendar-day,
+.shc-calendar-empty {
+    height: 3.4rem;
+}
+
+.shc-calendar-day {
+    border: none;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.3rem;
+    cursor: pointer;
+
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.shc-calendar-day:hover {
+    background: var(--primary-glow-transparent);
+    color: var(--primary-glow);
+}
+
+.shc-calendar-day.is-today {
+    border: 1px solid rgba(56, 189, 248, 0.45);
+}
+
+.shc-calendar-day.is-selected {
+    background: var(--primary-glow);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.shc-calendar-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.shc-calendar-clear,
+.shc-calendar-today {
+    border: none;
+    background: transparent;
+    color: var(--primary-glow);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.shc-calendar-clear:hover,
+.shc-calendar-today:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .shc-calendar {
+        width: 100%;
+        padding: 1.2rem;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .date-picker-trigger {
+        font-size: 1.45rem;
+    }
+
+    .shc-year-picker {
+        grid-template-columns: repeat(3, 1fr);
+        max-height: 16rem;
+    }
+
+    .shc-calendar-title {
+        font-size: 1.2rem;
+        padding: 0.5rem 0.8rem;
+    }
+
+    .shc-calendar-header {
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .shc-calendar-title {
+        font-size: 1.2rem;
+        text-align: center;
+    }
+
+    .shc-calendar-nav {
+        width: 3rem;
+        height: 3rem;
+        flex-shrink: 0;
+    }
+
+    .shc-calendar-weekdays,
+    .shc-calendar-days {
+        gap: 0.25rem;
+    }
+
+    .shc-calendar-day,
+    .shc-calendar-empty {
+        height: 3rem;
+    }
+
+    .shc-calendar-day {
+        font-size: 1.2rem;
+        border-radius: 0.6rem;
+    }
+
+    .shc-calendar-footer {
+        margin-top: 1rem;
+    }
+
+    .shc-calendar-clear,
+    .shc-calendar-today {
+        font-size: 1.2rem;
+    }
+}
+
+.shc-year-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+
+    max-height: 18rem;
+    overflow-y: auto;
+
+    padding: 0.4rem 0 1rem 0;
+    margin-bottom: 1rem;
+
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.shc-year-option {
+    height: 3.2rem;
+
+    border: none;
+    border-radius: 0.8rem;
+    background: transparent;
+
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.shc-year-option:hover {
+    background: var(--primary-glow-transparent);
+    color: var(--primary-glow);
+}
+
+.shc-year-option.is-selected {
+    background: var(--primary-glow);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* =========================================================
+   Ajuste específico: Histórico do Aluno
+   ========================================================= */
+
+.historico-aluno-page .content-wrapper {
+    align-items: start;
+}
+
+.historico-aluno-page .details-list {
+    min-width: 0;
+}
+
+.historico-aluno-page .actions-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 1rem;
+
+    margin: 0;
+    padding: 0;
+    border-top: none;
+
+    align-self: start;
+}
+
+.historico-aluno-page .actions-section .btn {
+    height: auto;
+    min-height: 4.4rem;
+    width: auto;
+
+    padding: 1rem 1.4rem;
+    border-radius: 0.8rem;
+
+    align-self: flex-start;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.historico-aluno-page .preview-section {
+    min-width: 0;
+    margin-top: 0;
+}
+
+.historico-aluno-page .pdf-preview-area {
+    width: 100%;
+}
+
+.historico-aluno-page .pdf-preview {
+    display: block;
+    width: 100%;
+    height: 36rem;
+    border-radius: 0.8rem;
+}
+
+.historico-aluno-page .pdf-open-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+
+    color: var(--primary-glow);
+    font-size: 1.3rem;
+    text-decoration: none;
+}
+
+.historico-aluno-page .pdf-open-link:hover {
+    text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .historico-aluno-page .content-wrapper {
+        grid-template-columns: minmax(28rem, 1fr) minmax(36rem, 1fr);
+        grid-template-areas:
+            "details preview"
+            "actions preview";
+        gap: 2.4rem 3rem;
+    }
+
+    .historico-aluno-page .details-list {
+        grid-area: details;
+    }
+
+    .historico-aluno-page .actions-section {
+        grid-area: actions;
+    }
+
+    .historico-aluno-page .preview-section {
+        grid-area: preview;
+    }
+}
+
+@media (max-width: 767px) {
+    .historico-aluno-page .actions-section {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .historico-aluno-page .actions-section .btn {
+        width: 100%;
+    }
+
+    .historico-aluno-page .pdf-preview {
+        height: 32rem;
+    }
+}

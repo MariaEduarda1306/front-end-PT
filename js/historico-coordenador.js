@@ -12,6 +12,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Variáveis de estado
     let allStudentsData = [];
+
+        function parseDateInput(value) {
+        if (!value) return null;
+
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    function parseBackendDate(value) {
+        if (!value) return null;
+
+        const datePart = String(value).split(' ')[0];
+        const [year, month, day] = datePart.split('-').map(Number);
+
+        if (!year || !month || !day) return null;
+
+        return new Date(year, month - 1, day);
+    }
+
+    function getPeriodoFiltro() {
+        const dataInicioVal = document.getElementById('data-inicio').value;
+        const dataFimVal = document.getElementById('data-fim').value;
+
+        return {
+            inicio: parseDateInput(dataInicioVal),
+            fim: parseDateInput(dataFimVal),
+            ativo: Boolean(dataInicioVal || dataFimVal)
+        };
+    }
+
+    function certificadoDentroDoPeriodo(cert) {
+        const { inicio, fim } = getPeriodoFiltro();
+
+        const dataCadastro = parseBackendDate(cert.created_at);
+
+        if (!dataCadastro) return false;
+
+        if (inicio && dataCadastro < inicio) return false;
+        if (fim && dataCadastro > fim) return false;
+
+        return true;
+    }
+
     let categoriasDisponiveis = [];
 
     // =======================================================
@@ -47,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allStudentsData = result.data || result;
             if (!Array.isArray(allStudentsData)) allStudentsData = [];
 
-            // Busca certificados para processar a contagem de solicitações pendentes/enviadas
+            // Busca certificados para calcular o total de solicitações por aluno
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
@@ -117,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="Nome do Aluno"><strong>${aluno.nome}</strong></td>
                 <td data-label="Matrícula">${aluno.matricula || '--'}</td>
                 <td data-label="Fase">${aluno.fase ? aluno.fase + 'ª Fase' : '--'}</td>
-                <td data-label="Solicitações">
+                <td data-label="Total de Solicitações">
                     <span class="${badgeClass}" style="${badgeStyle}">
                         ${count}
                     </span>
@@ -206,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             certificados.forEach(cert => {
                 const statusInfo = getStatusInfo(cert.status);
-                const fileUrl = formatFileUrl(cert.arquivo_url);
+                const filePath = cert.arquivo_url || cert.arquivo || cert.comprovante_url || '';
                 const dataEnvio = new Date(cert.created_at).toLocaleDateString('pt-BR');
                 
                 const horasValue = cert.horas_validadas ?? cert.carga_horaria_solicitada;
@@ -260,7 +303,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="preview-section">
                                 <h4>Comprovante</h4>
-                                <embed class="pdf-preview" src="${fileUrl}" type="application/pdf" />
+                                <div class="pdf-preview-area" data-file-path="${filePath}">
+                                    <div class="pdf-preview-state">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Carregando comprovante...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -270,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ativa acordeão global
             setupAccordion();
+            carregarPreviewsPdf();
 
             // Ativa os botões de avaliação injetados
             document.querySelectorAll('.btn-avaliar').forEach(button => {
@@ -283,6 +332,80 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             accordionPlaceholder.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
         }
+    }
+
+
+
+    // =======================================================
+    // PREVIEW SEGURO DE PDF
+    // Evita que aviso do ngrok ou erro do backend quebre o layout.
+    // =======================================================
+    async function carregarPreviewsPdf() {
+        const previewAreas = document.querySelectorAll('.pdf-preview-area');
+
+        for (const area of previewAreas) {
+            const rawPath = area.dataset.filePath;
+
+            if (!rawPath) {
+                mostrarPreviewIndisponivel(area, 'Nenhum comprovante foi encontrado para esta atividade.');
+                continue;
+            }
+
+            const fileUrl = formatFileUrl(rawPath);
+
+            try {
+                const response = await fetch(fileUrl, {
+                    headers: {
+                        'Accept': 'application/pdf,application/octet-stream,*/*',
+                        'Authorization': `Bearer ${authToken}`,
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok) {
+                    throw new Error('Arquivo indisponível.');
+                }
+
+                if (contentType.includes('text/html')) {
+                    throw new Error('O servidor retornou uma página HTML em vez do PDF.');
+                }
+
+                const blob = await response.blob();
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                area.innerHTML = `
+                    <iframe
+                        class="pdf-preview"
+                        src="${pdfUrl}"
+                        title="Pré-visualização do comprovante">
+                    </iframe>
+
+                    <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-up-right-from-square"></i>
+                        Abrir comprovante em nova guia
+                    </a>
+                `;
+            } catch (error) {
+                console.warn('Erro ao carregar comprovante:', error);
+                mostrarPreviewIndisponivel(
+                    area,
+                    'Não foi possível carregar o comprovante.'
+                );
+            }
+        }
+    }
+
+    function mostrarPreviewIndisponivel(area, mensagem) {
+        area.innerHTML = `
+            <div class="pdf-preview-unavailable">
+                <i class="fas fa-file-circle-exclamation"></i>
+                <strong>Comprovante indisponível</strong>
+                <span>${mensagem}</span>
+            </div>
+        `;
     }
 
     // =======================================================

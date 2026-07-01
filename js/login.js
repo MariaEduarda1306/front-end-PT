@@ -63,6 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
 
             try {
+                if (!API_BASE_URL) {
+                    throw new Error(API_CONFIG_HELP);
+                }
+
                 const response = await fetch(`${API_BASE_URL}/api/auth/login`, { //
                     method: 'POST',
                     headers: {
@@ -73,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(data),
                 });
 
-                const result = await response.json();
+                const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
                     throw new Error(result.message || 'Usuário ou senha inválidos.');
@@ -88,23 +92,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Redirecionamento baseado no papel (role) do usuário
                 switch (userType) {
                     case 'ALUNO':
-                        window.location.href = 'dashboard alunos.html';
+                        window.location.href = 'dashboard-alunos.html';
                         break;
                     case 'COORDENADOR':
-                        window.location.href = 'dashboard coordenador.html';
+                        window.location.href = 'dashboard-coordenador.html';
                         break;
                     case 'SECRETARIA':
-                        window.location.href = 'dashboard secretaria.html';
+                        window.location.href = 'dashboard-secretaria.html';
                         break;
                     case 'ADMINISTRADOR':
-                        window.location.href = 'dashboard administrador.html';
+                        window.location.href = 'dashboard-administrador.html';
                         break;
                     default:
                         throw new Error('Tipo de usuário desconhecido.');
                 }
 
             } catch (error) {
-                showToast(error.message, 'error');
+                const message = error instanceof TypeError
+                    ? `${API_CONFIG_HELP} Se a URL ja estiver correta, confira se a API esta online e se o CORS permite o dominio do GitHub Pages.`
+                    : error.message;
+
+                showToast(message, 'error');
                 console.error('Falha no login:', error);
                 
                 // Restaura o estado do botão em caso de falha

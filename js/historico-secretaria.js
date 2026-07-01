@@ -45,17 +45,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
+
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuarios?tipo=ALUNO`, {
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                }
             });
-            
+
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
-            
+
             const result = await response.json();
             allStudentsData = result.data || result;
 
             if (!Array.isArray(allStudentsData)) allStudentsData = [];
+
+            // Busca TODAS as solicitações para calcular o total por aluno
+            try {
+                const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                if (certResponse.ok) {
+                    const certResult = await certResponse.json();
+                    const certificados = certResult.data || certResult;
+
+                    const contagemPorAluno = {};
+
+                    if (Array.isArray(certificados)) {
+                        certificados.forEach(cert => {
+                            const alunoId = cert.aluno?.id || cert.aluno_id;
+
+                            if (alunoId) {
+                                contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
+                            }
+                        });
+                    }
+
+                    allStudentsData = allStudentsData.map(aluno => {
+                        aluno.certificados_count = contagemPorAluno[aluno.id] || 0;
+                        return aluno;
+                    });
+                }
+            } catch (e) {
+                console.warn('Não foi possível obter o total de solicitações.', e);
+            }
 
             renderStudentsTable();
 
@@ -116,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="Matrícula">${aluno.matricula || '--'}</td>
                 <td data-label="Curso">${aluno.curso?.nome || 'N/A'}</td>
                 <td data-label="Fase">${aluno.fase ? aluno.fase + 'ª Fase' : '--'}</td>
-                <td data-label="Solicitações">
+                <td data-label="Total de Solicitações">
                     <span class="status" style="color: #333; background: #eee;">
                         ${aluno.certificados_count || 0}
                     </span>
@@ -155,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             certificados.forEach(cert => {
                 // Utiliza as ferramentas globais do utils.js
                 const statusInfo = getStatusInfo(cert.status);
-                const fileUrl = formatFileUrl(cert.arquivo_url);
+                const filePath = cert.arquivo_url || cert.arquivo || cert.comprovante_url || '';
                 const dataEnvio = new Date(cert.created_at).toLocaleDateString('pt-BR');
 
                 const itemHTML = `
@@ -177,7 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="preview-section">
                                 <h4>Comprovante</h4>
-                                <embed class="pdf-preview" src="${fileUrl}" type="application/pdf" />
+                                <div class="pdf-preview-area" data-file-path="${filePath}">
+                                    <div class="pdf-preview-state">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Carregando comprovante...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -187,12 +232,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ativa o comportamento do acordeão
             setupAccordion();
+            carregarPreviewsPdf();
 
         } catch (error) {
             accordionPlaceholder.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
         }
     }
     
+
+
+    // =======================================================
+    // PREVIEW SEGURO DE PDF
+    // Evita que aviso do ngrok ou erro do backend quebre o layout.
+    // =======================================================
+    async function carregarPreviewsPdf() {
+        const previewAreas = document.querySelectorAll('.pdf-preview-area');
+
+        for (const area of previewAreas) {
+            const rawPath = area.dataset.filePath;
+
+            if (!rawPath) {
+                mostrarPreviewIndisponivel(area, 'Nenhum comprovante foi encontrado para esta atividade.');
+                continue;
+            }
+
+            const fileUrl = formatFileUrl(rawPath);
+
+            try {
+                const response = await fetch(fileUrl, {
+                    headers: {
+                        'Accept': 'application/pdf,application/octet-stream,*/*',
+                        'Authorization': `Bearer ${authToken}`,
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok) {
+                    throw new Error('Arquivo indisponível.');
+                }
+
+                if (contentType.includes('text/html')) {
+                    throw new Error('O servidor retornou uma página HTML em vez do PDF.');
+                }
+
+                const blob = await response.blob();
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                area.innerHTML = `
+                    <iframe
+                        class="pdf-preview"
+                        src="${pdfUrl}"
+                        title="Pré-visualização do comprovante">
+                    </iframe>
+
+                    <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-up-right-from-square"></i>
+                        Abrir comprovante em nova guia
+                    </a>
+                `;
+            } catch (error) {
+                console.warn('Erro ao carregar comprovante:', error);
+                mostrarPreviewIndisponivel(
+                    area,
+                    'Não foi possível carregar o comprovante.'
+                );
+            }
+        }
+    }
+
+    function mostrarPreviewIndisponivel(area, mensagem) {
+        area.innerHTML = `
+            <div class="pdf-preview-unavailable">
+                <i class="fas fa-file-circle-exclamation"></i>
+                <strong>Comprovante indisponível</strong>
+                <span>${mensagem}</span>
+            </div>
+        `;
+    }
+
     // =======================================================
     // 5. EVENTOS E INICIALIZAÇÃO
     // =======================================================
