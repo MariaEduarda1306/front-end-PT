@@ -298,4 +298,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.close-btn').forEach(btn =>
         btn.addEventListener('click', () => btn.closest('dialog').close())
     );
+
+    // Eventos de Filtro com suporte ao Enter
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            fetchUsers(); 
+        });
+    }
+
+    const filterInputsUsers = [
+        document.getElementById('filtro-nome'),
+        document.getElementById('filtro-cpf'),
+        document.getElementById('filtro-papel')
+    ];
+
+    filterInputsUsers.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchUsers();
+                }
+            });
+        }
+    });
+
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('filtro-nome').value = '';
+            document.getElementById('filtro-cpf').value = '';
+            document.getElementById('filtro-papel').value = '';
+            fetchUsers();
+        });
+    }
 });

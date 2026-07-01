@@ -96,14 +96,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Eventos dos Filtros
-    const filterBtn = document.getElementById('filter-btn');
+    // Eventos dos Filtros com suporte ao Enter
     if (filterBtn) {
         filterBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            renderStudentsTable();
+            fetchStudents();
         });
     }
+
+    const filterInputsAlunos = [
+        document.getElementById('filtro-nome'),
+        document.getElementById('filtro-matricula'),
+        document.getElementById('filtro-curso')
+    ];
+
+    filterInputsAlunos.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchStudents();
+                }
+            });
+        }
+    });
 
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     if (clearFiltersBtn) {
@@ -112,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('filtro-nome').value = '';
             document.getElementById('filtro-matricula').value = '';
             document.getElementById('filtro-curso').value = '';
-            renderStudentsTable();
+            fetchStudents();
         });
     }
 

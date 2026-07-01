@@ -299,30 +299,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 5. EVENTOS E INICIALIZAÇÃO
+    // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    backBtn.addEventListener('click', () => {
-        detailView.style.display = 'none';
-        listView.style.display = 'block';
-    });
-
+    // Botão Filtrar
     filterBtn.addEventListener('click', (e) => {
         e.preventDefault();
         renderStudentsTable();
     });
-    
-    clearFiltersBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('aluno').value = '';
-        document.getElementById('matricula').value = '';
-        document.getElementById('curso').value = '';
-        document.getElementById('data-inicio').value = '';
-        document.getElementById('data-fim').value = '';
-        renderStudentsTable();
+
+    // Suporte ao Enter
+    const filterInputsSec = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        document.getElementById('curso'),
+        document.getElementById('data-inicio'),
+        document.getElementById('data-fim')
+    ];
+
+    filterInputsSec.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    renderStudentsTable();
+                }
+            });
+        }
     });
 
-    // Inicialização da página
-    populateCourseFilter();
-    fetchStudents();
+    // Limpar Filtros
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            document.getElementById('aluno').value = '';
+            document.getElementById('matricula').value = '';
+            document.getElementById('curso').value = '';
+            document.getElementById('data-inicio').value = '';
+            document.getElementById('data-fim').value = '';
+            renderStudentsTable();
+        });
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            detailView.style.display = 'none';
+            listView.style.display = 'block';
+        });
+    }
+
+    // Inicialização
+    (async () => {
+        await populateCourseFilter();
+        await fetchStudents();
+    })();
 });

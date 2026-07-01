@@ -4444,14 +4444,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Eventos dos Filtros
-    const filterBtn = document.getElementById('filter-btn');
+    // Eventos dos Filtros com suporte ao Enter
     if (filterBtn) {
         filterBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            renderStudentsTable();
+            fetchStudents();
         });
     }
+
+    const filterInputsAlunos = [
+        document.getElementById('filtro-nome'),
+        document.getElementById('filtro-matricula'),
+        document.getElementById('filtro-curso')
+    ];
+
+    filterInputsAlunos.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchStudents();
+                }
+            });
+        }
+    });
 
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     if (clearFiltersBtn) {
@@ -4460,7 +4476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('filtro-nome').value = '';
             document.getElementById('filtro-matricula').value = '';
             document.getElementById('filtro-curso').value = '';
-            renderStudentsTable();
+            fetchStudents();
         });
     }
 
@@ -4957,6 +4973,41 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.close-btn').forEach(btn =>
         btn.addEventListener('click', () => btn.closest('dialog').close())
     );
+
+    // Eventos de Filtro com suporte ao Enter
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            fetchUsers(); 
+        });
+    }
+
+    const filterInputsUsers = [
+        document.getElementById('filtro-nome'),
+        document.getElementById('filtro-cpf'),
+        document.getElementById('filtro-papel')
+    ];
+
+    filterInputsUsers.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchUsers();
+                }
+            });
+        }
+    });
+
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('filtro-nome').value = '';
+            document.getElementById('filtro-cpf').value = '';
+            document.getElementById('filtro-papel').value = '';
+            fetchUsers();
+        });
+    }
 });
 
 ```
@@ -5349,7 +5400,7 @@ document.addEventListener('DOMContentLoaded', () => {
             studentListTbody.appendChild(row);
         });
     }
-    
+
     // =======================================================
     // 3. VISTA DE DETALHES (HISTÓRICO INDIVIDUAL)
     // =======================================================
@@ -5632,21 +5683,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =======================================================
-    // 5. EVENTOS E INICIALIZAÇÃO
+    // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); renderStudentsTable(); });
-    
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', (e) => {
+    // Botão Filtrar
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            renderStudentsTable();
+        });
+    }
+
+    // Suporte ao Enter
+    const filterInputsCoord = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        document.getElementById('fase')
+    ];
+
+    filterInputsCoord.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    renderStudentsTable();
+                }
+            });
+        }
+    });
+
+    // Limpar Filtros
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
             document.getElementById('aluno').value = '';
             document.getElementById('matricula').value = '';
-            document.getElementById('fase').value = '';
+            const faseSelect = document.getElementById('fase');
+            if (faseSelect) faseSelect.value = '';
             
             const faseTrigger = document.querySelector('.custom-select-wrapper .custom-select-trigger span');
             if (faseTrigger) faseTrigger.textContent = 'Todas';
-
+            
             renderStudentsTable();
         });
     }
@@ -5658,12 +5734,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Inicialização da página
+    // Inicialização
     (async () => {
         await fetchCategorias();
         await fetchStudents();
         
-        // Inicializa o dropdown de Fase usando Utils
         const faseWrapper = document.querySelector('.custom-select-wrapper');
         if (faseWrapper) setupCustomSelect(faseWrapper);
     })();
@@ -5974,32 +6049,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 5. EVENTOS E INICIALIZAÇÃO
+    // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    backBtn.addEventListener('click', () => {
-        detailView.style.display = 'none';
-        listView.style.display = 'block';
-    });
-
+    // Botão Filtrar
     filterBtn.addEventListener('click', (e) => {
         e.preventDefault();
         renderStudentsTable();
     });
-    
-    clearFiltersBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('aluno').value = '';
-        document.getElementById('matricula').value = '';
-        document.getElementById('curso').value = '';
-        document.getElementById('data-inicio').value = '';
-        document.getElementById('data-fim').value = '';
-        renderStudentsTable();
+
+    // Suporte ao Enter
+    const filterInputsSec = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        document.getElementById('curso'),
+        document.getElementById('data-inicio'),
+        document.getElementById('data-fim')
+    ];
+
+    filterInputsSec.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    renderStudentsTable();
+                }
+            });
+        }
     });
 
-    // Inicialização da página
-    populateCourseFilter();
-    fetchStudents();
+    // Limpar Filtros
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            document.getElementById('aluno').value = '';
+            document.getElementById('matricula').value = '';
+            document.getElementById('curso').value = '';
+            document.getElementById('data-inicio').value = '';
+            document.getElementById('data-fim').value = '';
+            renderStudentsTable();
+        });
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            detailView.style.display = 'none';
+            listView.style.display = 'block';
+        });
+    }
+
+    // Inicialização
+    (async () => {
+        await populateCourseFilter();
+        await fetchStudents();
+    })();
 });
 
 ```
@@ -7658,9 +7760,8 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando solicitações entregues...</td></tr>';
         
         try {
-            // === FILTROS QUE SERÃO ENVIADOS PARA O BACKEND ===
             const filters = {
-                status: 'ENTREGUE',                    // sempre pendentes para validação
+                status: 'ENTREGUE',
                 search: document.getElementById('aluno').value.trim(),
                 matricula: document.getElementById('matricula').value.trim(),
                 fase: faseSelect ? faseSelect.value : ''
@@ -7687,7 +7788,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Agrupa por aluno (mantido, pois ainda é útil para o coordenador)
+            // Agrupamento por aluno
             const studentsMap = {};
             pendingCertificates.forEach(cert => {
                 const dadosAluno = cert.aluno || cert.requerente;
@@ -7706,17 +7807,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            let studentsArray = Object.values(studentsMap);
+            const studentsArray = Object.values(studentsMap);
 
-            // REMOVA todo o bloco de filtro client-side abaixo:
-            // (não precisa mais filtrar aqui, o backend já fez)
-
-            if (!studentsArray.length) {
+            if (studentsArray.length === 0) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;
             }
 
-            // Renderização permanece igual
             studentListTbody.innerHTML = '';
             studentsArray.forEach(aluno => {
                 const row = document.createElement('tr');
@@ -8008,7 +8105,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); fetchAndRenderStudents(); });
+    // Botão Filtrar
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchAndRenderStudents();
+        });
+    }
+
+    // Suporte ao pressionar ENTER nos campos de filtro
+    const filterInputs = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        faseSelect
+    ];
+
+    filterInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchAndRenderStudents();
+                }
+            });
+        }
+    });
 
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {

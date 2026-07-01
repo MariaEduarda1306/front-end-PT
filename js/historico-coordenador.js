@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             studentListTbody.appendChild(row);
         });
     }
-    
+
     // =======================================================
     // 3. VISTA DE DETALHES (HISTÓRICO INDIVIDUAL)
     // =======================================================
@@ -447,21 +447,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =======================================================
-    // 5. EVENTOS E INICIALIZAÇÃO
+    // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); renderStudentsTable(); });
-    
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', (e) => {
+    // Botão Filtrar
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            renderStudentsTable();
+        });
+    }
+
+    // Suporte ao Enter
+    const filterInputsCoord = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        document.getElementById('fase')
+    ];
+
+    filterInputsCoord.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    renderStudentsTable();
+                }
+            });
+        }
+    });
+
+    // Limpar Filtros
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
             document.getElementById('aluno').value = '';
             document.getElementById('matricula').value = '';
-            document.getElementById('fase').value = '';
+            const faseSelect = document.getElementById('fase');
+            if (faseSelect) faseSelect.value = '';
             
             const faseTrigger = document.querySelector('.custom-select-wrapper .custom-select-trigger span');
             if (faseTrigger) faseTrigger.textContent = 'Todas';
-
+            
             renderStudentsTable();
         });
     }
@@ -473,12 +498,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Inicialização da página
+    // Inicialização
     (async () => {
         await fetchCategorias();
         await fetchStudents();
         
-        // Inicializa o dropdown de Fase usando Utils
         const faseWrapper = document.querySelector('.custom-select-wrapper');
         if (faseWrapper) setupCustomSelect(faseWrapper);
     })();
