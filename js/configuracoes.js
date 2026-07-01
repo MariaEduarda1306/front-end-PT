@@ -375,31 +375,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Exportação de Certificados (JSON)
+    // Exportação de Certificados (API Externa)
     const btnExportCerts = document.getElementById('btn-export-certs');
     if (btnExportCerts) {
         btnExportCerts.addEventListener('click', async () => {
+            const externalUrl = apiUrlInput.value.trim();
+            const externalKey = apiKeyInput.value.trim();
+
+            // Valida se as credenciais da API Externa foram preenchidas (mesmo comportamento da importação)
+            if (!externalUrl || !externalKey) return showToast('Configure a API Legada antes de exportar.', 'error');
+
             const originalText = btnExportCerts.innerHTML;
             btnExportCerts.disabled = true;
-            btnExportCerts.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+            btnExportCerts.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exportando...';
 
             try {
+                // 1. Busca os certificados da nossa API local
                 const response = await fetch(`${API_BASE_URL}/api/certificados/exportar/externo`, {
                     headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
-                if (!response.ok) throw new Error('Falha na exportação.');
+                
+                if (!response.ok) throw new Error('Falha ao buscar dados locais para exportação.');
 
-                const data = await response.json();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `shc_export_${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-                window.URL.revokeObjectURL(url);
-                showToast('Exportação concluída!');
-            } catch (error) { showToast(error.message, 'error'); }
-            finally {
+                const dadosExportacao = await response.json();
+
+                // 2. Envia os certificados diretamente para a API Legada Externa
+                const respLegado = await fetch(externalUrl, {
+                    method: 'POST', // Pode ser alterado para PUT dependendo do padrão da sua API externa
+                    headers: { 
+                        'x-api-key': externalKey, 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify(dadosExportacao)
+                });
+
+                if (!respLegado.ok) throw new Error('Falha ao enviar os dados para o sistema legado.');
+
+                showToast('Exportação concluída com sucesso!');
+            } catch (error) { 
+                showToast(error.message, 'error'); 
+            } finally {
+                // Restaura o botão
                 btnExportCerts.disabled = false;
                 btnExportCerts.innerHTML = originalText;
             }
