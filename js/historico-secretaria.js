@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailView = document.getElementById('student-detail-view');
     const studentListTbody = document.getElementById('student-list-tbody');
     const backBtn = document.getElementById('back-to-list-btn');
-    const filterBtn = document.querySelector('.btn-primary');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     const accordionPlaceholder = document.getElementById('accordion-placeholder');
     const courseFilterSelect = document.getElementById('curso');
