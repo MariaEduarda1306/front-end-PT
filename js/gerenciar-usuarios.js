@@ -116,8 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderUsersTable() {
-        // Backend já filtrou — só renderizamos
-        const usersArray = allUsersData;
+        const usersArray = allUsersData || [];
 
         usersTbody.innerHTML = '';
 
@@ -126,13 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const cpfTerm = document.getElementById('filtro-cpf').value.trim();
             const papelValue = document.getElementById('filtro-papel').value;
 
-            let mensagem = 'Nenhum usuário encontrado.';
+            let mensagem = 'Nenhum usuário cadastrado no momento.';
             
             if (searchTerm || cpfTerm || papelValue) {
                 mensagem = 'Nenhum usuário encontrado com estes filtros.';
             }
 
-            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
+            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 

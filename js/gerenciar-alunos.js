@@ -68,8 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderStudentsTable() {
-        // O backend já aplicou os filtros, só renderizamos
-        const studentsArray = allStudentsData;
+        const studentsArray = allStudentsData || [];
 
         studentsTbody.innerHTML = '';
 
@@ -78,13 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const matriculaTerm = document.getElementById('filtro-matricula').value.trim();
             const cursoValue = document.getElementById('filtro-curso').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || cursoValue) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
+            studentsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 

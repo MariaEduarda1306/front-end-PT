@@ -130,23 +130,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderStudentsTable() {
-        // Não precisa mais filtrar aqui — o backend já filtrou
-        const studentsArray = allStudentsData;
+        const studentsArray = allStudentsData || [];
 
         studentListTbody.innerHTML = '';
 
-        if (!studentsArray || studentsArray.length === 0) {
+        if (studentsArray.length === 0) {
             const searchTerm = document.getElementById('aluno').value.trim();
             const matriculaTerm = document.getElementById('matricula').value.trim();
             const faseValue = document.getElementById('fase').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || faseValue) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentListTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 

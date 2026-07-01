@@ -352,164 +352,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(fileInputReal) {
         fileInputReal.addEventListener('change', () => toggleError(fileWrapper, false));
     }
-
-    function initDatePicker() {
-        const wrapper = document.getElementById('data-emissao-picker');
-        if (!wrapper) return;
-
-        const hiddenInput = document.getElementById('data_emissao');
-        const trigger = wrapper.querySelector('.date-picker-trigger');
-        const text = document.getElementById('data_emissao_text');
-        const calendar = wrapper.querySelector('.shc-calendar');
-        const title = wrapper.querySelector('.shc-calendar-title');
-        const daysContainer = wrapper.querySelector('.shc-calendar-days');
-        const prevBtn = wrapper.querySelector('[data-action="prev"]');
-        const nextBtn = wrapper.querySelector('[data-action="next"]');
-        const todayBtn = wrapper.querySelector('.shc-calendar-today');
-        const clearBtn = wrapper.querySelector('.shc-calendar-clear');
-
-        const meses = [
-            'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-            'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-        ];
-
-        const hoje = new Date();
-        let mesAtual = hoje.getMonth();
-        let anoAtual = hoje.getFullYear();
-
-        function pad(valor) {
-            return String(valor).padStart(2, '0');
-        }
-
-        function formatarISO(data) {
-            return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}`;
-        }
-
-        function formatarBR(data) {
-            return `${pad(data.getDate())}/${pad(data.getMonth() + 1)}/${data.getFullYear()}`;
-        }
-
-        function abrirCalendario() {
-            calendar.hidden = false;
-            renderizarCalendario();
-        }
-
-        function fecharCalendario() {
-            calendar.hidden = true;
-        }
-
-        function renderizarCalendario() {
-            title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
-            daysContainer.innerHTML = '';
-
-            const primeiroDiaSemana = new Date(anoAtual, mesAtual, 1).getDay();
-            const ultimoDiaMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-
-            for (let i = 0; i < primeiroDiaSemana; i++) {
-                const empty = document.createElement('span');
-                empty.className = 'shc-calendar-empty';
-                daysContainer.appendChild(empty);
-            }
-
-            for (let dia = 1; dia <= ultimoDiaMes; dia++) {
-                const data = new Date(anoAtual, mesAtual, dia);
-                const iso = formatarISO(data);
-
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'shc-calendar-day';
-                button.textContent = dia;
-
-                const isToday =
-                    data.getDate() === hoje.getDate() &&
-                    data.getMonth() === hoje.getMonth() &&
-                    data.getFullYear() === hoje.getFullYear();
-
-                if (isToday) {
-                    button.classList.add('is-today');
-                }
-
-                if (hiddenInput.value === iso) {
-                    button.classList.add('is-selected');
-                }
-
-                button.addEventListener('click', () => {
-                    hiddenInput.value = iso;
-                    text.textContent = formatarBR(data);
-                    toggleError(trigger, false);
-                    fecharCalendario();
-                });
-
-                daysContainer.appendChild(button);
-            }
-        }
-
-        trigger.addEventListener('click', () => {
-            if (calendar.hidden) {
-                abrirCalendario();
-            } else {
-                fecharCalendario();
-            }
-        });
-
-        prevBtn.addEventListener('click', () => {
-            mesAtual--;
-
-            if (mesAtual < 0) {
-                mesAtual = 11;
-                anoAtual--;
-            }
-
-            renderizarCalendario();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            mesAtual++;
-
-            if (mesAtual > 11) {
-                mesAtual = 0;
-                anoAtual++;
-            }
-
-            renderizarCalendario();
-        });
-
-        todayBtn.addEventListener('click', () => {
-            const data = new Date();
-
-            mesAtual = data.getMonth();
-            anoAtual = data.getFullYear();
-
-            hiddenInput.value = formatarISO(data);
-            text.textContent = formatarBR(data);
-            toggleError(trigger, false);
-            fecharCalendario();
-        });
-
-        clearBtn.addEventListener('click', () => {
-            hiddenInput.value = '';
-            text.textContent = 'dd/mm/aaaa';
-            renderizarCalendario();
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!wrapper.contains(event.target)) {
-                fecharCalendario();
-            }
-        });
-    }
-
-    initDatePicker();
     
-    // Executa a busca de categorias e, se for edição, carrega os dados logo em seguida
+    // Executa a busca de categorias e, se for edição, carrega os dados
     await populateCategorias();
     
     if (editId) {
-        // Altera visualmente a página para modo de edição
-        const pageTitle = document.querySelector('.page-header h1') || document.querySelector('h1') || document.querySelector('h2');
+        const pageTitle = document.querySelector('h1') || document.querySelector('.form-title');
         if (pageTitle) pageTitle.textContent = 'Editar Atividade';
         submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
         
         await loadCertificateData(editId);
+    }
+
+    // Inicializa calendário customizado usando a função global de utils.js
+    if (typeof setupDatePicker === 'function') {
+        setupDatePicker('data-emissao-picker', 'data_emissao', 'data_emissao_text');
     }
 });

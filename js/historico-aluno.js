@@ -35,7 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Verificar se existem dados
             if (!Array.isArray(certificados) || certificados.length === 0) {
-                accordionContainer.innerHTML = '<p>Você ainda não enviou nenhum certificado.</p>';
+                accordionContainer.innerHTML = `
+                    <div style="text-align:center; padding: 5rem 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-folder-open" style="font-size: 4.5rem; opacity: 0.4; margin-bottom: 1.5rem;"></i>
+                        <p style="font-size: 1.8rem; margin: 0 0 0.5rem 0;">Você ainda não enviou nenhum certificado.</p>
+                        <p style="font-size: 1.4rem;">Quando enviar sua primeira atividade, ela aparecerá aqui.</p>
+                    </div>`;
                 return;
             }
 
@@ -106,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             configurarBotoesDeAcao();
 
         } catch (error) {
-            accordionContainer.innerHTML = `<p style="color: var(--status-reprovado);">${error.message}</p>`;
+            accordionContainer.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
             console.error('Erro ao carregar histórico:', error);
         }
     }

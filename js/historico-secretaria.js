@@ -133,13 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataInicio = document.getElementById('data-inicio').value;
             const dataFim = document.getElementById('data-fim').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -363,5 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
     (async () => {
         await populateCourseFilter();
         await fetchStudents();
+
+        // Inicializa calendários customizados
+        if (typeof setupDatePicker === 'function') {
+            setupDatePicker('data-inicio-picker', 'data-inicio', 'data-inicio_text');
+            setupDatePicker('data-fim-picker', 'data-fim', 'data-fim_text');
+        }
     })();
 });

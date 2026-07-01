@@ -3126,11 +3126,26 @@ dialog,
                 
                 <div class="filter-group">
                     <label for="data-inicio">De</label>
-                    <input type="date" id="data-inicio" name="data-inicio">
+                    <div class="date-picker-wrapper" id="data-inicio-picker">
+                        <input type="hidden" id="data-inicio" name="data-inicio">
+                        <button type="button" class="date-picker-trigger">
+                            <i class="fas fa-calendar-days"></i>
+                            <span id="data-inicio_text">dd/mm/aaaa</span>
+                        </button>
+                        <div class="shc-calendar" hidden></div>
+                    </div>
                 </div>
+
                 <div class="filter-group">
                     <label for="data-fim">Até</label>
-                    <input type="date" id="data-fim" name="data-fim">
+                    <div class="date-picker-wrapper" id="data-fim-picker">
+                        <input type="hidden" id="data-fim" name="data-fim">
+                        <button type="button" class="date-picker-trigger">
+                            <i class="fas fa-calendar-days"></i>
+                            <span id="data-fim_text">dd/mm/aaaa</span>
+                        </button>
+                        <div class="shc-calendar" hidden></div>
+                    </div>
                 </div>
                 
                 <div class="filter-buttons">
@@ -3568,165 +3583,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(fileInputReal) {
         fileInputReal.addEventListener('change', () => toggleError(fileWrapper, false));
     }
-
-    function initDatePicker() {
-        const wrapper = document.getElementById('data-emissao-picker');
-        if (!wrapper) return;
-
-        const hiddenInput = document.getElementById('data_emissao');
-        const trigger = wrapper.querySelector('.date-picker-trigger');
-        const text = document.getElementById('data_emissao_text');
-        const calendar = wrapper.querySelector('.shc-calendar');
-        const title = wrapper.querySelector('.shc-calendar-title');
-        const daysContainer = wrapper.querySelector('.shc-calendar-days');
-        const prevBtn = wrapper.querySelector('[data-action="prev"]');
-        const nextBtn = wrapper.querySelector('[data-action="next"]');
-        const todayBtn = wrapper.querySelector('.shc-calendar-today');
-        const clearBtn = wrapper.querySelector('.shc-calendar-clear');
-
-        const meses = [
-            'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-            'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-        ];
-
-        const hoje = new Date();
-        let mesAtual = hoje.getMonth();
-        let anoAtual = hoje.getFullYear();
-
-        function pad(valor) {
-            return String(valor).padStart(2, '0');
-        }
-
-        function formatarISO(data) {
-            return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}`;
-        }
-
-        function formatarBR(data) {
-            return `${pad(data.getDate())}/${pad(data.getMonth() + 1)}/${data.getFullYear()}`;
-        }
-
-        function abrirCalendario() {
-            calendar.hidden = false;
-            renderizarCalendario();
-        }
-
-        function fecharCalendario() {
-            calendar.hidden = true;
-        }
-
-        function renderizarCalendario() {
-            title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
-            daysContainer.innerHTML = '';
-
-            const primeiroDiaSemana = new Date(anoAtual, mesAtual, 1).getDay();
-            const ultimoDiaMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-
-            for (let i = 0; i < primeiroDiaSemana; i++) {
-                const empty = document.createElement('span');
-                empty.className = 'shc-calendar-empty';
-                daysContainer.appendChild(empty);
-            }
-
-            for (let dia = 1; dia <= ultimoDiaMes; dia++) {
-                const data = new Date(anoAtual, mesAtual, dia);
-                const iso = formatarISO(data);
-
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'shc-calendar-day';
-                button.textContent = dia;
-
-                const isToday =
-                    data.getDate() === hoje.getDate() &&
-                    data.getMonth() === hoje.getMonth() &&
-                    data.getFullYear() === hoje.getFullYear();
-
-                if (isToday) {
-                    button.classList.add('is-today');
-                }
-
-                if (hiddenInput.value === iso) {
-                    button.classList.add('is-selected');
-                }
-
-                button.addEventListener('click', () => {
-                    hiddenInput.value = iso;
-                    text.textContent = formatarBR(data);
-                    toggleError(trigger, false);
-                    fecharCalendario();
-                });
-
-                daysContainer.appendChild(button);
-            }
-        }
-
-        trigger.addEventListener('click', () => {
-            if (calendar.hidden) {
-                abrirCalendario();
-            } else {
-                fecharCalendario();
-            }
-        });
-
-        prevBtn.addEventListener('click', () => {
-            mesAtual--;
-
-            if (mesAtual < 0) {
-                mesAtual = 11;
-                anoAtual--;
-            }
-
-            renderizarCalendario();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            mesAtual++;
-
-            if (mesAtual > 11) {
-                mesAtual = 0;
-                anoAtual++;
-            }
-
-            renderizarCalendario();
-        });
-
-        todayBtn.addEventListener('click', () => {
-            const data = new Date();
-
-            mesAtual = data.getMonth();
-            anoAtual = data.getFullYear();
-
-            hiddenInput.value = formatarISO(data);
-            text.textContent = formatarBR(data);
-            toggleError(trigger, false);
-            fecharCalendario();
-        });
-
-        clearBtn.addEventListener('click', () => {
-            hiddenInput.value = '';
-            text.textContent = 'dd/mm/aaaa';
-            renderizarCalendario();
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!wrapper.contains(event.target)) {
-                fecharCalendario();
-            }
-        });
-    }
-
-    initDatePicker();
     
-    // Executa a busca de categorias e, se for edição, carrega os dados logo em seguida
+    // Executa a busca de categorias e, se for edição, carrega os dados
     await populateCategorias();
     
     if (editId) {
-        // Altera visualmente a página para modo de edição
-        const pageTitle = document.querySelector('.page-header h1') || document.querySelector('h1') || document.querySelector('h2');
+        const pageTitle = document.querySelector('h1') || document.querySelector('.form-title');
         if (pageTitle) pageTitle.textContent = 'Editar Atividade';
         submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
         
         await loadCertificateData(editId);
+    }
+
+    // Inicializa calendário customizado usando a função global de utils.js
+    if (typeof setupDatePicker === 'function') {
+        setupDatePicker('data-emissao-picker', 'data_emissao', 'data_emissao_text');
     }
 });
 
@@ -4416,8 +4287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderStudentsTable() {
-        // O backend já aplicou os filtros, só renderizamos
-        const studentsArray = allStudentsData;
+        const studentsArray = allStudentsData || [];
 
         studentsTbody.innerHTML = '';
 
@@ -4426,13 +4296,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const matriculaTerm = document.getElementById('filtro-matricula').value.trim();
             const cursoValue = document.getElementById('filtro-curso').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || cursoValue) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
+            studentsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -4801,8 +4671,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderUsersTable() {
-        // Backend já filtrou — só renderizamos
-        const usersArray = allUsersData;
+        const usersArray = allUsersData || [];
 
         usersTbody.innerHTML = '';
 
@@ -4811,13 +4680,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const cpfTerm = document.getElementById('filtro-cpf').value.trim();
             const papelValue = document.getElementById('filtro-papel').value;
 
-            let mensagem = 'Nenhum usuário encontrado.';
+            let mensagem = 'Nenhum usuário cadastrado no momento.';
             
             if (searchTerm || cpfTerm || papelValue) {
                 mensagem = 'Nenhum usuário encontrado com estes filtros.';
             }
 
-            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${mensagem}</td></tr>`;
+            usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -5071,7 +4940,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Verificar se existem dados
             if (!Array.isArray(certificados) || certificados.length === 0) {
-                accordionContainer.innerHTML = '<p>Você ainda não enviou nenhum certificado.</p>';
+                accordionContainer.innerHTML = `
+                    <div style="text-align:center; padding: 5rem 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-folder-open" style="font-size: 4.5rem; opacity: 0.4; margin-bottom: 1.5rem;"></i>
+                        <p style="font-size: 1.8rem; margin: 0 0 0.5rem 0;">Você ainda não enviou nenhum certificado.</p>
+                        <p style="font-size: 1.4rem;">Quando enviar sua primeira atividade, ela aparecerá aqui.</p>
+                    </div>`;
                 return;
             }
 
@@ -5142,7 +5016,7 @@ document.addEventListener('DOMContentLoaded', () => {
             configurarBotoesDeAcao();
 
         } catch (error) {
-            accordionContainer.innerHTML = `<p style="color: var(--status-reprovado);">${error.message}</p>`;
+            accordionContainer.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
             console.error('Erro ao carregar histórico:', error);
         }
     }
@@ -5386,23 +5260,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
 
     function renderStudentsTable() {
-        // Não precisa mais filtrar aqui — o backend já filtrou
-        const studentsArray = allStudentsData;
+        const studentsArray = allStudentsData || [];
 
         studentListTbody.innerHTML = '';
 
-        if (!studentsArray || studentsArray.length === 0) {
+        if (studentsArray.length === 0) {
             const searchTerm = document.getElementById('aluno').value.trim();
             const matriculaTerm = document.getElementById('matricula').value.trim();
             const faseValue = document.getElementById('fase').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || faseValue) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentListTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -5913,13 +5786,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataInicio = document.getElementById('data-inicio').value;
             const dataFim = document.getElementById('data-fim').value;
 
-            let mensagem = 'Nenhum aluno encontrado.';
+            let mensagem = 'Nenhum aluno cadastrado no momento.';
             
             if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
                 mensagem = 'Nenhum aluno encontrado com estes filtros.';
             }
 
-            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
             return;
         }
 
@@ -6143,6 +6016,12 @@ document.addEventListener('DOMContentLoaded', () => {
     (async () => {
         await populateCourseFilter();
         await fetchStudents();
+
+        // Inicializa calendários customizados
+        if (typeof setupDatePicker === 'function') {
+            setupDatePicker('data-inicio-picker', 'data-inicio', 'data-inicio_text');
+            setupDatePicker('data-fim-picker', 'data-fim', 'data-fim_text');
+        }
     })();
 });
 
@@ -7753,6 +7632,113 @@ function buildQueryParams(filters = {}) {
     });
     
     return params.toString();
+}
+
+// =======================================================
+// 6. CALENDÁRIO CUSTOMIZADO SHC
+// =======================================================
+
+function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const displaySpan = document.getElementById(displaySpanId);
+    const trigger = wrapper.querySelector('.date-picker-trigger');
+    const calendar = wrapper.querySelector('.shc-calendar');
+
+    if (!trigger || !calendar || !hiddenInput) return;
+
+    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+    let mesAtual = new Date().getMonth();
+    let anoAtual = new Date().getFullYear();
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function formatarBR(data) {
+        return `${pad(data.getDate())}/${pad(data.getMonth()+1)}/${data.getFullYear()}`;
+    }
+
+    function formatarISO(data) {
+        return `${data.getFullYear()}-${pad(data.getMonth()+1)}-${pad(data.getDate())}`;
+    }
+
+    function renderizarCalendario() {
+        const title = calendar.querySelector('.shc-calendar-title');
+        const daysContainer = calendar.querySelector('.shc-calendar-days');
+
+        title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
+        daysContainer.innerHTML = '';
+
+        const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
+        const ultimoDia = new Date(anoAtual, mesAtual + 1, 0).getDate();
+
+        for (let i = 0; i < primeiroDia; i++) {
+            const empty = document.createElement('span');
+            empty.className = 'shc-calendar-empty';
+            daysContainer.appendChild(empty);
+        }
+
+        for (let dia = 1; dia <= ultimoDia; dia++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'shc-calendar-day';
+            btn.textContent = dia;
+
+            const data = new Date(anoAtual, mesAtual, dia);
+            const iso = formatarISO(data);
+
+            if (hiddenInput.value === iso) btn.classList.add('is-selected');
+
+            btn.addEventListener('click', () => {
+                hiddenInput.value = iso;
+                displaySpan.textContent = formatarBR(data);
+                calendar.hidden = true;
+            });
+
+            daysContainer.appendChild(btn);
+        }
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        calendar.hidden = !calendar.hidden;
+        if (!calendar.hidden) renderizarCalendario();
+    });
+
+    // Navegação
+    calendar.querySelectorAll('.shc-calendar-nav').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.action === 'prev') {
+                mesAtual--;
+                if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+            } else {
+                mesAtual++;
+                if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+            }
+            renderizarCalendario();
+        });
+    });
+
+    calendar.querySelector('.shc-calendar-today').addEventListener('click', () => {
+        const hoje = new Date();
+        mesAtual = hoje.getMonth();
+        anoAtual = hoje.getFullYear();
+        hiddenInput.value = formatarISO(hoje);
+        displaySpan.textContent = formatarBR(hoje);
+        calendar.hidden = true;
+    });
+
+    calendar.querySelector('.shc-calendar-clear').addEventListener('click', () => {
+        hiddenInput.value = '';
+        displaySpan.textContent = 'dd/mm/aaaa';
+        calendar.hidden = true;
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) calendar.hidden = true;
+    });
 }
 ```
 

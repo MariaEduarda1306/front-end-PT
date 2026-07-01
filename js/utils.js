@@ -545,3 +545,110 @@ function buildQueryParams(filters = {}) {
     
     return params.toString();
 }
+
+// =======================================================
+// 6. CALENDÁRIO CUSTOMIZADO SHC
+// =======================================================
+
+function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const displaySpan = document.getElementById(displaySpanId);
+    const trigger = wrapper.querySelector('.date-picker-trigger');
+    const calendar = wrapper.querySelector('.shc-calendar');
+
+    if (!trigger || !calendar || !hiddenInput) return;
+
+    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+    let mesAtual = new Date().getMonth();
+    let anoAtual = new Date().getFullYear();
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function formatarBR(data) {
+        return `${pad(data.getDate())}/${pad(data.getMonth()+1)}/${data.getFullYear()}`;
+    }
+
+    function formatarISO(data) {
+        return `${data.getFullYear()}-${pad(data.getMonth()+1)}-${pad(data.getDate())}`;
+    }
+
+    function renderizarCalendario() {
+        const title = calendar.querySelector('.shc-calendar-title');
+        const daysContainer = calendar.querySelector('.shc-calendar-days');
+
+        title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
+        daysContainer.innerHTML = '';
+
+        const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
+        const ultimoDia = new Date(anoAtual, mesAtual + 1, 0).getDate();
+
+        for (let i = 0; i < primeiroDia; i++) {
+            const empty = document.createElement('span');
+            empty.className = 'shc-calendar-empty';
+            daysContainer.appendChild(empty);
+        }
+
+        for (let dia = 1; dia <= ultimoDia; dia++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'shc-calendar-day';
+            btn.textContent = dia;
+
+            const data = new Date(anoAtual, mesAtual, dia);
+            const iso = formatarISO(data);
+
+            if (hiddenInput.value === iso) btn.classList.add('is-selected');
+
+            btn.addEventListener('click', () => {
+                hiddenInput.value = iso;
+                displaySpan.textContent = formatarBR(data);
+                calendar.hidden = true;
+            });
+
+            daysContainer.appendChild(btn);
+        }
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        calendar.hidden = !calendar.hidden;
+        if (!calendar.hidden) renderizarCalendario();
+    });
+
+    // Navegação
+    calendar.querySelectorAll('.shc-calendar-nav').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.action === 'prev') {
+                mesAtual--;
+                if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+            } else {
+                mesAtual++;
+                if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+            }
+            renderizarCalendario();
+        });
+    });
+
+    calendar.querySelector('.shc-calendar-today').addEventListener('click', () => {
+        const hoje = new Date();
+        mesAtual = hoje.getMonth();
+        anoAtual = hoje.getFullYear();
+        hiddenInput.value = formatarISO(hoje);
+        displaySpan.textContent = formatarBR(hoje);
+        calendar.hidden = true;
+    });
+
+    calendar.querySelector('.shc-calendar-clear').addEventListener('click', () => {
+        hiddenInput.value = '';
+        displaySpan.textContent = 'dd/mm/aaaa';
+        calendar.hidden = true;
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) calendar.hidden = true;
+    });
+}
