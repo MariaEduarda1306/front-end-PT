@@ -196,6 +196,10 @@
 .form-group textarea { min-height: 10rem; resize: vertical; }
 .input-wrapper input { padding-left: 4.5rem; }
 
+.input-wrapper #password {
+    padding-right: 4.5rem;
+}
+
 input[type="date"]:valid,
 input[type="date"]:valid::-webkit-datetime-edit-text,
 input[type="date"]:valid::-webkit-datetime-edit-month-field,
