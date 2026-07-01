@@ -42,9 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Buscando solicitações entregues...</td></tr>';
         
         try {
-            // === FILTROS QUE SERÃO ENVIADOS PARA O BACKEND ===
             const filters = {
-                status: 'ENTREGUE',                    // sempre pendentes para validação
+                status: 'ENTREGUE',
                 search: document.getElementById('aluno').value.trim(),
                 matricula: document.getElementById('matricula').value.trim(),
                 fase: faseSelect ? faseSelect.value : ''
@@ -71,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Agrupa por aluno (mantido, pois ainda é útil para o coordenador)
+            // Agrupamento por aluno
             const studentsMap = {};
             pendingCertificates.forEach(cert => {
                 const dadosAluno = cert.aluno || cert.requerente;
@@ -90,17 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            let studentsArray = Object.values(studentsMap);
+            const studentsArray = Object.values(studentsMap);
 
-            // REMOVA todo o bloco de filtro client-side abaixo:
-            // (não precisa mais filtrar aqui, o backend já fez)
-
-            if (!studentsArray.length) {
+            if (studentsArray.length === 0) {
                 studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum aluno encontrado com estes filtros.</td></tr>';
                 return;
             }
 
-            // Renderização permanece igual
             studentListTbody.innerHTML = '';
             studentsArray.forEach(aluno => {
                 const row = document.createElement('tr');
@@ -392,7 +387,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    if (filterBtn) filterBtn.addEventListener('click', (e) => { e.preventDefault(); fetchAndRenderStudents(); });
+    // Botão Filtrar
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchAndRenderStudents();
+        });
+    }
+
+    // Suporte ao pressionar ENTER nos campos de filtro
+    const filterInputs = [
+        document.getElementById('aluno'),
+        document.getElementById('matricula'),
+        faseSelect
+    ];
+
+    filterInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchAndRenderStudents();
+                }
+            });
+        }
+    });
 
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
