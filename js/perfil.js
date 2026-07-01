@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // === LÓGICA DO BOTÃO REMOVER (melhorada) ===
+        // === LÓGICA DO BOTÃO REMOVER ===
         if (removeBtn) {
             removeBtn.addEventListener('click', async () => {
                 const confirmed = await showConfirmModal(
@@ -519,7 +519,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Sim, remover',
                     'danger'
                 );
-
                 if (!confirmed) return;
 
                 const originalBtnText = removeBtn.innerHTML;
@@ -527,13 +526,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
 
                 try {
+                    const formData = new FormData();
+                    formData.append('_method', 'DELETE');   // ← Isso é o que o Laravel entende
+
                     const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
-                        method: 'DELETE',
+                        method: 'POST',                     // ← Mudado para POST
                         headers: {
                             'Authorization': `Bearer ${authToken}`,
                             'Accept': 'application/json',
                             'ngrok-skip-browser-warning': 'true'
-                        }
+                        },
+                        body: formData
                     });
 
                     if (!response.ok) {
