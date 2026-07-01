@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         avatarWrapper.classList.toggle('has-photo', hasPhoto);
 
         if (removeBtn) {
-            removeBtn.classList.add('hidden');
+            // Só esconde se não tiver foto. Se tiver, ele aparece.
+            removeBtn.classList.toggle('hidden', !hasPhoto);
         }
         
         if (hasPhoto && url) {
@@ -427,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setAvatarState(true, localPreview);
 
                     showToast('Foto de perfil atualizada!');
-                    
+
                 } catch (error) {
                     Object.keys(loggedInUser).forEach(key => delete loggedInUser[key]);
                     Object.assign(loggedInUser, previousUserData);
@@ -455,7 +456,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (removeBtn) {
-            removeBtn.classList.add('hidden');
+            removeBtn.addEventListener('click', async () => {
+                if (!confirm('Tem certeza que deseja remover a foto de perfil?')) return;
+
+                if (avatarMenu) avatarMenu.style.display = 'none';
+
+                const originalBtnText = removeBtn.innerHTML;
+                removeBtn.disabled = true;
+                removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
+
+                try {
+                    // 1. Cria um avatar padrão (fundo escuro com a inicial)
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 300;
+                    canvas.height = 300;
+                    const ctx = canvas.getContext('2d');
+                    
+                    ctx.fillStyle = '#1e293b'; 
+                    ctx.fillRect(0, 0, 300, 300);
+                    
+                    ctx.font = 'bold 120px Poppins, sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const inicial = loggedInUser.nome ? loggedInUser.nome.charAt(0).toUpperCase() : 'U';
+                    ctx.fillText(inicial, 150, 160);
+
+                    // 2. Converte para arquivo JPG em memória
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                    const file = new File([blob], 'avatar_padrao.jpg', { type: 'image/jpeg' });
+
+                    // 3. Substitui a imagem atual enviando a nova para a API
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+
+                    const response = await fetch(`${API_BASE_URL}/api/usuarios/avatar`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Accept': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Erro ao tentar remover a foto.');
+
+                    const result = await response.json();
+                    
+                    // 4. Atualiza a interface e o cache local
+                    const avatarUrlRetornada = result.avatar_url || result.data?.avatar_url || result.usuario?.avatar_url;
+                    
+                    loggedInUser.avatar_url = avatarUrlRetornada;
+                    delete loggedInUser.avatar_preview;
+                    localStorage.setItem('userData', JSON.stringify(loggedInUser));
+
+                    const localPreviewUrl = URL.createObjectURL(blob);
+                    setAvatarState(true, localPreviewUrl);
+
+                    showToast('Foto removida com sucesso!');
+
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    removeBtn.disabled = false;
+                    removeBtn.innerHTML = originalBtnText;
+                }
+            });
         }
     }
 
