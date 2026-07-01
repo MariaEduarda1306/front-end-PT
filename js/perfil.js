@@ -415,23 +415,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (avatarUrlRetornada) {
                         loggedInUser.avatar_url = avatarUrlRetornada;
-                        delete loggedInUser.avatar_preview;
                     }
 
+                    // Guarda a pré-visualização local no cache do navegador
+                    // Isto impede que a imagem fique em branco nas próximas navegações rápidas
+                    loggedInUser.avatar_preview = localPreview;
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    let finalAvatarUrl = localPreview;
-
-                    try {
-                        finalAvatarUrl = await resolveAvatarDisplayUrl() || localPreview;
-                    } catch (error) {
-                        loggedInUser.avatar_preview = localPreview;
-                        localStorage.setItem('userData', JSON.stringify(loggedInUser));
-                    }
-
-                    setAvatarState(true, finalAvatarUrl);
+                    // Mantém a imagem que o utilizador escolheu visível na tela
+                    // sem forçar uma nova requisição ao servidor
+                    setAvatarState(true, localPreview);
 
                     showToast('Foto de perfil atualizada!');
+                    
                 } catch (error) {
                     Object.keys(loggedInUser).forEach(key => delete loggedInUser[key]);
                     Object.assign(loggedInUser, previousUserData);
