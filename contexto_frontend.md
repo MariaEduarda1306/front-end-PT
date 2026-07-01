@@ -589,6 +589,10 @@ body {
 .form-group textarea { min-height: 10rem; resize: vertical; }
 .input-wrapper input { padding-left: 4.5rem; }
 
+.input-wrapper #password {
+    padding-right: 4.5rem;
+}
+
 input[type="date"]:valid,
 input[type="date"]:valid::-webkit-datetime-edit-text,
 input[type="date"]:valid::-webkit-datetime-edit-month-field,
@@ -769,25 +773,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
 .login-title { font-size: 1.8rem; color: var(--text-secondary); margin-bottom: 4rem; }
 #login-form .form-group {margin-bottom: 1.5rem;}
 .input-wrapper { position: relative; }
-.input-wrapper i.prefix-icon {
-    position: absolute; left: 1.5rem; top: 50%;
-    transform: translateY(-50%); color: var(--text-secondary);
-}
-.password-toggle {
-    position: absolute; right: 1.5rem; top: 50%;
-    transform: translateY(-50%); cursor: pointer; color: var(--text-secondary);
-}
-.btn-full {
-    width: 100%; padding: 1.4rem; border: none; border-radius: 0.8rem;
-    cursor: pointer; font-weight: 600; font-size: 1.6rem;
-    transition: all 0.3s ease; background-color: var(--primary-glow);
-    color: #fff; margin-top: 1rem;
-}
+.input-wrapper i.prefix-icon { position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); z-index: 2; width: 1.8rem; text-align: center; font-size: 1.35rem; color: rgba(148, 163, 184, 0.38); pointer-events: none; transition: color 0.25s ease, opacity 0.25s ease;}
+.password-toggle { position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%); z-index: 2; cursor: pointer; font-size: 1.45rem; color: rgba(148, 163, 184, 0.48); transition: color 0.25s ease, opacity 0.25s ease;}
+.input-wrapper:focus-within i.prefix-icon { color: rgba(0, 170, 255, 0.52);}
+.input-wrapper:focus-within .password-toggle { color: rgba(0, 170, 255, 0.62);}
+.btn-full { width: 100%; padding: 1.4rem; border: none; border-radius: 0.8rem; cursor: pointer; font-weight: 600; font-size: 1.6rem; transition: all 0.3s ease; background-color: var(--primary-glow); color: #fff; margin-top: 1rem;}
 .btn-full:hover { box-shadow: 0 0 15px var(--primary-glow); }
-.link-action {
-    display: block; margin-top: 2rem; color: var(--text-secondary);
-    text-decoration: none; font-size: 1.2rem; cursor: pointer;
-}
+.link-action { display: block; margin-top: 2rem; color: var(--text-secondary); text-decoration: none; font-size: 1.2rem; cursor: pointer;}
 .link-action:hover { color: var(--primary-glow); text-decoration: underline; }
 .confirmation-message { text-align: center; }
 .confirmation-message i { font-size: 4.8rem; color: var(--primary-glow); margin-bottom: 2rem; }
@@ -4221,6 +4213,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!respLegado.ok) throw new Error('Falha ao conectar com sistema legado.');
                 const dadosLegado = await respLegado.json();
 
+                const payloadImportacao = Array.isArray(dadosLegado)
+                    ? { usuarios: dadosLegado }
+                    : dadosLegado;
+
                 const respImport = await fetch(`${API_BASE_URL}/api/usuarios/import`, {
                     method: 'POST',
                     headers: { 
@@ -4229,7 +4225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Accept': 'application/json',
                         'ngrok-skip-browser-warning': 'true'
                     },
-                    body: JSON.stringify(dadosLegado)
+                    body: JSON.stringify(payloadImportacao)
                 });
 
                 if (respImport.ok) showToast('Importação concluída com sucesso!');
@@ -4327,42 +4323,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Atualiza o título de boas-vindas com o nome vindo do utils.js
     if (titleElement) {
         titleElement.innerHTML = `Bem-vindo(a), <span style="color: var(--primary-glow);">${loggedInUser.nome}</span>`;
-    }
-
-    // =======================================================
-    // 3. LÓGICA DE LOGOUT (PADRONIZADA)
-    // =======================================================
-    // O sistema pode usar 'logout-btn' (local) ou 'global-logout-btn' (do header injetado)
-    const logoutBtn = document.getElementById('logout-btn') || document.getElementById('global-logout-btn');
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-
-            // Tenta avisar o servidor sobre o encerramento da sessão
-            try {
-                if (authToken) {
-                    await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                }
-            } catch (error) {
-                // Silenciamos o erro caso o servidor esteja offline, 
-                // pois o logout local deve acontecer de qualquer forma.
-                console.warn('Logout remoto falhou, procedendo com limpeza local.');
-            } finally {
-                // Limpeza obrigatória dos dados locais
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-
-                // Redireciona para a tela inicial (login)
-                window.location.href = 'index.html';
-            }
-        });
     }
 });
 ```
@@ -4535,8 +4495,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataNascInput = document.getElementById('data_nascimento');
         if (dataNascInput) {
             dataNascInput.value = aluno.data_nascimento || '';
-            dataNascInput.parentElement.classList.add('hidden');
-        } 
+            dataNascInput.parentElement.classList.remove('hidden');
+        }
 
         const passwordGroup = document.getElementById('password-group');
         if (passwordGroup) passwordGroup.classList.remove('hidden');
@@ -4573,10 +4533,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const dataNascInput = document.getElementById('data_nascimento');
-        
-        if (dataNascInput && dataNascInput.value) {
-            data.data_nascimento = dataNascInput.value;
+
+        if (!dataNascInput || !dataNascInput.value) {
+            if (dataNascInput) toggleError(dataNascInput, true);
+            showToast('Informe a data de nascimento.', 'error');
+            return;
         }
+
+        data.data_nascimento = dataNascInput.value;
 
         if (!isEditing && dataNascInput && dataNascInput.value) {
             const [y, m, d] = data.data_nascimento.split('-');
@@ -6199,6 +6163,10 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
 
             try {
+                if (!API_BASE_URL) {
+                    throw new Error(API_CONFIG_HELP);
+                }
+
                 const response = await fetch(`${API_BASE_URL}/api/auth/login`, { //
                     method: 'POST',
                     headers: {
@@ -6209,7 +6177,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(data),
                 });
 
-                const result = await response.json();
+                const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
                     throw new Error(result.message || 'Usuário ou senha inválidos.');
@@ -6240,7 +6208,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } catch (error) {
-                showToast(error.message, 'error');
+                const message = error instanceof TypeError
+                    ? `${API_CONFIG_HELP} Se a URL ja estiver correta, confira se a API esta online e se o CORS permite o dominio do GitHub Pages.`
+                    : error.message;
+
+                showToast(message, 'error');
                 console.error('Falha no login:', error);
                 
                 // Restaura o estado do botão em caso de falha
@@ -6337,6 +6309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('upload-btn');
     const removeBtn = document.getElementById('remove-btn');
 
+    let currentAvatarObjectUrl = null;
     // =======================================================
     // 2. FUNÇÕES AUXILIARES DE INTERFACE
     // =======================================================
@@ -6362,20 +6335,71 @@ document.addEventListener('DOMContentLoaded', () => {
             return user.avatar_preview;
         }
 
-        if (user.avatar_url) {
-            if (
-                user.avatar_url.startsWith('data:') ||
-                user.avatar_url.startsWith('blob:') ||
-                user.avatar_url.startsWith('http')
-            ) {
-                return user.avatar_url;
-            }
-
-            return formatFileUrl(user.avatar_url);
+        if (!user.avatar_url) {
+            return '';
         }
 
-        return '';
+        if (
+            user.avatar_url.startsWith('data:') ||
+            user.avatar_url.startsWith('blob:')
+        ) {
+            return user.avatar_url;
+        }
+
+        return formatFileUrl(user.avatar_url);
     }
+
+    function isProtectedAvatarUrl(url) {
+        try {
+            const parsedUrl = new URL(url, window.location.href);
+            return parsedUrl.pathname.startsWith('/api/usuarios/avatars/');
+        } catch (error) {
+            return String(url).includes('/api/usuarios/avatars/');
+        }
+    }
+
+    async function resolveAvatarDisplayUrl(user = loggedInUser) {
+        const avatarUrl = getAvatarDisplayUrl(user);
+
+        if (!avatarUrl) {
+            return '';
+        }
+
+        if (
+            avatarUrl.startsWith('data:') ||
+            avatarUrl.startsWith('blob:') ||
+            !isProtectedAvatarUrl(avatarUrl)
+        ) {
+            return avatarUrl;
+        }
+
+        const response = await fetch(avatarUrl, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'image/*,*/*',
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar a foto de perfil.');
+        }
+
+        const blob = await response.blob();
+
+        if (currentAvatarObjectUrl) {
+            URL.revokeObjectURL(currentAvatarObjectUrl);
+        }
+
+        currentAvatarObjectUrl = URL.createObjectURL(blob);
+        return currentAvatarObjectUrl;
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (currentAvatarObjectUrl) {
+            URL.revokeObjectURL(currentAvatarObjectUrl);
+        }
+    });
 
     function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
@@ -6440,13 +6464,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             Object.assign(loggedInUser, usuarioAtualizado);
 
-            // Mantém a prévia local caso o backend/mock ainda não entregue uma imagem real
-            if (avatarPreviewAtual) {
+            // Mantém a prévia local apenas se o backend ainda não tiver avatar salvo
+            if (!loggedInUser.avatar_url && avatarPreviewAtual) {
                 loggedInUser.avatar_preview = avatarPreviewAtual;
+            } else {
+                delete loggedInUser.avatar_preview;
             }
 
             localStorage.setItem('userData', JSON.stringify(loggedInUser));
-
+           
             return loggedInUser;
         } catch (error) {
             console.warn('Usando dados locais do usuário:', error);
@@ -6474,25 +6500,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Carregamento de Avatar
-        const avatarDisplayUrl = getAvatarDisplayUrl();
+        (async () => {
+            try {
+                const avatarDisplayUrl = await resolveAvatarDisplayUrl();
 
-        if (avatarDisplayUrl) {
-            const imgPreload = new Image();
-
-            imgPreload.onload = () => setAvatarState(true, avatarDisplayUrl);
-
-            imgPreload.onerror = () => {
+                if (avatarDisplayUrl) {
+                    setAvatarState(true, avatarDisplayUrl);
+                } else {
+                    setAvatarState(false);
+                }
+            } catch (error) {
                 if (loggedInUser.avatar_preview) {
                     setAvatarState(true, loggedInUser.avatar_preview);
                 } else {
                     setAvatarState(false);
                 }
-            };
-
-            imgPreload.src = avatarDisplayUrl;
-        } else {
-            setAvatarState(false);
-        }
+            }
+        })();
 
         // Dados específicos por papel
         const userType = loggedInUser.tipo;
@@ -6626,6 +6650,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                const maxAvatarSize = 2 * 1024 * 1024; // 2 MB
+
+                if (file.size > maxAvatarSize) {
+                    showToast('A foto de perfil deve ter no máximo 2 MB.', 'error');
+                    avatarInput.value = '';
+                    return;
+                }
+
                 if (avatarMenu) {
                     avatarMenu.style.display = 'none';
                 }
@@ -6672,15 +6704,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (avatarUrlRetornada) {
                         loggedInUser.avatar_url = avatarUrlRetornada;
+                        delete loggedInUser.avatar_preview;
                     }
 
                     localStorage.setItem('userData', JSON.stringify(loggedInUser));
 
-                    const finalAvatarUrl = getAvatarDisplayUrl();
+                    let finalAvatarUrl = localPreview;
 
-                    if (finalAvatarUrl) {
-                        setAvatarState(true, finalAvatarUrl);
+                    try {
+                        finalAvatarUrl = await resolveAvatarDisplayUrl() || localPreview;
+                    } catch (error) {
+                        loggedInUser.avatar_preview = localPreview;
+                        localStorage.setItem('userData', JSON.stringify(loggedInUser));
                     }
+
+                    setAvatarState(true, finalAvatarUrl);
 
                     showToast('Foto de perfil atualizada!');
                 } catch (error) {
@@ -7025,23 +7063,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // 1. CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // =======================================================
 
-/**
- * Define a URL base da API de forma dinâmica.
- *
- * Como usar com ngrok:
- * Abra uma vez:
- * index.html?api=https://SEU-LINK.ngrok-free.app
- *
- * Depois o link fica salvo no localStorage.
- */
 const urlParams = new URLSearchParams(window.location.search);
 const apiFromUrl = urlParams.get('api');
 
-if (apiFromUrl) {
-    localStorage.setItem('API_BASE_URL', apiFromUrl.replace(/\/$/, ''));
-}
+const isLocalFrontend =
+    ['localhost', '127.0.0.1', ''].includes(window.location.hostname) ||
+    window.location.protocol === 'file:';
 
-const DEFAULT_API_URL = 'http://localhost:8000';
+const LOCAL_API_URL = 'http://localhost:8000';
+
+const PRODUCTION_API_URL = 'https://panoramic-figure-mushroom.ngrok-free.dev';
 
 let savedApiUrl = localStorage.getItem('API_BASE_URL');
 
@@ -7050,8 +7081,8 @@ if (apiFromUrl) {
     localStorage.setItem('API_BASE_URL', savedApiUrl);
 }
 
-if (!savedApiUrl) {
-    savedApiUrl = DEFAULT_API_URL;
+if (!savedApiUrl || savedApiUrl.includes('localhost') || savedApiUrl.includes('127.0.0.1')) {
+    savedApiUrl = isLocalFrontend ? LOCAL_API_URL : PRODUCTION_API_URL;
     localStorage.setItem('API_BASE_URL', savedApiUrl);
 }
 
@@ -7561,6 +7592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(preCarregarPaginasInternas, 1000);
     }
 });
+
 ```
 
 ## Arquivo: js\validar-horas.js
@@ -7902,16 +7934,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleEvaluation(certificateId, newStatus, studentId, studentName) {
         const panel = document.querySelector(`.validation-panel[data-cert-id="${certificateId}"]`);
         
+        const categoriaValue = panel.querySelector('.edit-categoria').value;
+        const categoriaId = parseInt(categoriaValue, 10);
+
         const payload = {
             status: newStatus,
-            horas_validadas: parseInt(panel.querySelector('.horas-validadas').value) || 0,
+            horas_validadas: parseInt(panel.querySelector('.horas-validadas').value, 10) || 0,
             observacao: panel.querySelector('.observacao').value || '',
-            categoria_id: parseInt(panel.querySelector('.edit-categoria').value) || null,
             nome_certificado: panel.querySelector('.edit-nome').value,
             instituicao: panel.querySelector('.edit-instituicao').value,
             data_emissao: panel.querySelector('.edit-data').value,
-            carga_horaria_solicitada: parseInt(panel.querySelector('.edit-carga').value) || 0
+            carga_horaria_solicitada: parseInt(panel.querySelector('.edit-carga').value, 10) || 0
         };
+
+        if (categoriaId) {
+            payload.categoria_id = categoriaId;
+        }
 
         if ((newStatus === 'REPROVADO' || newStatus === 'APROVADO_COM_RESSALVAS') && !payload.observacao.trim()) {
             showToast('Justificativa obrigatória para esta ação.', 'error');
