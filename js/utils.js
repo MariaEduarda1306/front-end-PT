@@ -559,10 +559,48 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
     const trigger = wrapper.querySelector('.date-picker-trigger');
     const calendar = wrapper.querySelector('.shc-calendar');
 
-    if (!trigger || !calendar || !hiddenInput) return;
+    if (!trigger || !calendar || !hiddenInput || !displaySpan) return;
+
+    // Se o HTML do calendário estiver vazio ou incompleto, monta a estrutura automaticamente
+    if (
+        !calendar.querySelector('.shc-calendar-title') ||
+        !calendar.querySelector('.shc-calendar-days') ||
+        !calendar.querySelector('.shc-calendar-today') ||
+        !calendar.querySelector('.shc-calendar-clear')
+    ) {
+        calendar.innerHTML = `
+            <div class="shc-calendar-header">
+                <button type="button" class="shc-calendar-nav" data-action="prev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+
+                <button type="button" class="shc-calendar-title"></button>
+
+                <button type="button" class="shc-calendar-nav" data-action="next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="shc-calendar-weekdays">
+                <span>D</span>
+                <span>S</span>
+                <span>T</span>
+                <span>Q</span>
+                <span>Q</span>
+                <span>S</span>
+                <span>S</span>
+            </div>
+
+            <div class="shc-calendar-days"></div>
+
+            <div class="shc-calendar-footer">
+                <button type="button" class="shc-calendar-clear">Limpar</button>
+                <button type="button" class="shc-calendar-today">Hoje</button>
+            </div>
+        `;
+    }
 
     const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-
     let mesAtual = new Date().getMonth();
     let anoAtual = new Date().getFullYear();
 
