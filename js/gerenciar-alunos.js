@@ -12,6 +12,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variável global para dados na memória (cache local para filtros)
     let allStudentsData = []; 
 
+    function formatarDataBR(dataISO) {
+        if (!dataISO || !/^\d{4}-\d{2}-\d{2}$/.test(dataISO)) {
+            return 'dd/mm/aaaa';
+        }
+
+        const [ano, mes, dia] = dataISO.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+
+    function setDataNascimento(dataISO = '') {
+        const dataNascInput = document.getElementById('data_nascimento');
+        const dataNascText = document.getElementById('data_nascimento_text');
+
+        if (dataNascInput) {
+            dataNascInput.value = dataISO || '';
+        }
+
+        if (dataNascText) {
+            dataNascText.textContent = dataISO ? formatarDataBR(dataISO) : 'dd/mm/aaaa';
+        }
+    }
+
+    function mostrarCampoNascimento() {
+        const nascimentoGroup = document.getElementById('nascimento-group');
+
+        if (nascimentoGroup) {
+            nascimentoGroup.classList.remove('hidden');
+        }
+    }
+
     // =======================================================
     // 1. MÁSCARA DE CPF (Utilizando Utils)
     // =======================================================
@@ -159,16 +189,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('student-id').value = '';
         document.getElementById('modal-title').textContent = 'Adicionar Novo Aluno';
         
-        const dataNascInput = document.getElementById('data_nascimento');
         const passwordGroup = document.getElementById('password-group');
-        
-        if (dataNascInput) {
-            dataNascInput.parentElement.classList.remove('hidden');
-            dataNascInput.value = '';
-        }
+
+        mostrarCampoNascimento();
+        setDataNascimento('');
+
         if (passwordGroup) passwordGroup.classList.add('hidden');
-        
-        studentModal.showModal();
+                
+                studentModal.showModal();
     });
 
     function openEditModal(aluno) {
@@ -191,11 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('fase').value = aluno.fase || '';
         
-        const dataNascInput = document.getElementById('data_nascimento');
-        if (dataNascInput) {
-            dataNascInput.value = aluno.data_nascimento || '';
-            dataNascInput.parentElement.classList.remove('hidden');
-        }
+        mostrarCampoNascimento();
+        setDataNascimento(aluno.data_nascimento || '');
 
         const passwordGroup = document.getElementById('password-group');
         if (passwordGroup) passwordGroup.classList.remove('hidden');
@@ -234,7 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataNascInput = document.getElementById('data_nascimento');
 
         if (!dataNascInput || !dataNascInput.value) {
-            if (dataNascInput) toggleError(dataNascInput, true);
+            const dateTrigger = document.querySelector('#data-nascimento-picker .date-picker-trigger');
+            toggleError(dateTrigger || dataNascInput, true);
             showToast('Informe a data de nascimento.', 'error');
             return;
         }
@@ -313,9 +339,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const filterSelect = document.getElementById('filtro-curso');
             const modalSelect = document.getElementById('curso');
 
+            if (filterSelect) {
+                filterSelect.innerHTML = '<option value="">Todos</option>';
+            }
+
+            if (modalSelect) {
+                modalSelect.innerHTML = '<option value="">Selecione...</option>';
+            }
+
             cursos.forEach(curso => {
-                if (filterSelect) filterSelect.insertAdjacentHTML('beforeend', `<option value="${curso.id}">${curso.nome}</option>`);
-                if (modalSelect) modalSelect.insertAdjacentHTML('beforeend', `<option value="${curso.id}">${curso.nome}</option>`);
+                if (filterSelect) {
+                    filterSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${curso.id}">${curso.nome}</option>`
+                    );
+                }
+
+                if (modalSelect) {
+                    modalSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${curso.id}">${curso.nome}</option>`
+                    );
+                }
             });
             cursosCarregados = true;
         } catch (e) { console.error(e); }
@@ -328,6 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicialização da página
     (async () => {
+        if (typeof setupDatePicker === 'function') {
+            setupDatePicker('data-nascimento-picker', 'data_nascimento', 'data_nascimento_text');
+        }
+
         await populateCourseSelects();
         fetchStudents(); 
     })();

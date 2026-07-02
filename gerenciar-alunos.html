@@ -87,7 +87,49 @@
 
                 <div class="form-group" id="nascimento-group">
                     <label for="data_nascimento">Data Nascimento (Senha Inicial)</label>
-                    <input type="date" id="data_nascimento">
+
+                    <div class="date-picker-wrapper" id="data-nascimento-picker">
+                        <input type="hidden" id="data_nascimento" name="data_nascimento">
+
+                        <button type="button" class="date-picker-trigger">
+                            <i class="fas fa-calendar-days" aria-hidden="true"></i>
+                            <span id="data_nascimento_text">dd/mm/aaaa</span>
+                        </button>
+
+                        <div class="shc-calendar" hidden>
+                            <div class="shc-calendar-header">
+                                <button type="button" class="shc-calendar-nav" data-action="prev">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+
+                                <button type="button" class="shc-calendar-title">
+                                    <span class="shc-calendar-month-label"></span>
+                                    <span class="shc-calendar-year-label"></span>
+                                </button>
+
+                                <button type="button" class="shc-calendar-nav" data-action="next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="shc-calendar-weekdays">
+                                <span>D</span>
+                                <span>S</span>
+                                <span>T</span>
+                                <span>Q</span>
+                                <span>Q</span>
+                                <span>S</span>
+                                <span>S</span>
+                            </div>
+
+                            <div class="shc-calendar-days"></div>
+
+                            <div class="shc-calendar-footer">
+                                <button type="button" class="shc-calendar-clear">Limpar</button>
+                                <button type="button" class="shc-calendar-today">Hoje</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group hidden" id="password-group">

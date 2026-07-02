@@ -2680,7 +2680,49 @@ dialog,
 
                 <div class="form-group" id="nascimento-group">
                     <label for="data_nascimento">Data Nascimento (Senha Inicial)</label>
-                    <input type="date" id="data_nascimento">
+
+                    <div class="date-picker-wrapper" id="data-nascimento-picker">
+                        <input type="hidden" id="data_nascimento" name="data_nascimento">
+
+                        <button type="button" class="date-picker-trigger">
+                            <i class="fas fa-calendar-days" aria-hidden="true"></i>
+                            <span id="data_nascimento_text">dd/mm/aaaa</span>
+                        </button>
+
+                        <div class="shc-calendar" hidden>
+                            <div class="shc-calendar-header">
+                                <button type="button" class="shc-calendar-nav" data-action="prev">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+
+                                <button type="button" class="shc-calendar-title">
+                                    <span class="shc-calendar-month-label"></span>
+                                    <span class="shc-calendar-year-label"></span>
+                                </button>
+
+                                <button type="button" class="shc-calendar-nav" data-action="next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="shc-calendar-weekdays">
+                                <span>D</span>
+                                <span>S</span>
+                                <span>T</span>
+                                <span>Q</span>
+                                <span>Q</span>
+                                <span>S</span>
+                                <span>S</span>
+                            </div>
+
+                            <div class="shc-calendar-days"></div>
+
+                            <div class="shc-calendar-footer">
+                                <button type="button" class="shc-calendar-clear">Limpar</button>
+                                <button type="button" class="shc-calendar-today">Hoje</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group hidden" id="password-group">
@@ -3132,7 +3174,39 @@ dialog,
                             <i class="fas fa-calendar-days"></i>
                             <span id="data-inicio_text">dd/mm/aaaa</span>
                         </button>
-                        <div class="shc-calendar" hidden></div>
+                        <div class="shc-calendar" hidden>
+                            <div class="shc-calendar-header">
+                                <button type="button" class="shc-calendar-nav" data-action="prev">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+
+                                <button type="button" class="shc-calendar-title">
+                                    <span class="shc-calendar-month-label"></span>
+                                    <span class="shc-calendar-year-label"></span>
+                                </button>
+
+                                <button type="button" class="shc-calendar-nav" data-action="next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="shc-calendar-weekdays">
+                                <span>D</span>
+                                <span>S</span>
+                                <span>T</span>
+                                <span>Q</span>
+                                <span>Q</span>
+                                <span>S</span>
+                                <span>S</span>
+                            </div>
+
+                            <div class="shc-calendar-days"></div>
+
+                            <div class="shc-calendar-footer">
+                                <button type="button" class="shc-calendar-clear">Limpar</button>
+                                <button type="button" class="shc-calendar-today">Hoje</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3144,7 +3218,39 @@ dialog,
                             <i class="fas fa-calendar-days"></i>
                             <span id="data-fim_text">dd/mm/aaaa</span>
                         </button>
-                        <div class="shc-calendar" hidden></div>
+                        <div class="shc-calendar" hidden>
+                            <div class="shc-calendar-header">
+                                <button type="button" class="shc-calendar-nav" data-action="prev">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+
+                                <button type="button" class="shc-calendar-title">
+                                    <span class="shc-calendar-month-label"></span>
+                                    <span class="shc-calendar-year-label"></span>
+                                </button>
+
+                                <button type="button" class="shc-calendar-nav" data-action="next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="shc-calendar-weekdays">
+                                <span>D</span>
+                                <span>S</span>
+                                <span>T</span>
+                                <span>Q</span>
+                                <span>Q</span>
+                                <span>S</span>
+                                <span>S</span>
+                            </div>
+
+                            <div class="shc-calendar-days"></div>
+
+                            <div class="shc-calendar-footer">
+                                <button type="button" class="shc-calendar-clear">Limpar</button>
+                                <button type="button" class="shc-calendar-today">Hoje</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -4231,6 +4337,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variável global para dados na memória (cache local para filtros)
     let allStudentsData = []; 
 
+    function formatarDataBR(dataISO) {
+        if (!dataISO || !/^\d{4}-\d{2}-\d{2}$/.test(dataISO)) {
+            return 'dd/mm/aaaa';
+        }
+
+        const [ano, mes, dia] = dataISO.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+
+    function setDataNascimento(dataISO = '') {
+        const dataNascInput = document.getElementById('data_nascimento');
+        const dataNascText = document.getElementById('data_nascimento_text');
+
+        if (dataNascInput) {
+            dataNascInput.value = dataISO || '';
+        }
+
+        if (dataNascText) {
+            dataNascText.textContent = dataISO ? formatarDataBR(dataISO) : 'dd/mm/aaaa';
+        }
+    }
+
+    function mostrarCampoNascimento() {
+        const nascimentoGroup = document.getElementById('nascimento-group');
+
+        if (nascimentoGroup) {
+            nascimentoGroup.classList.remove('hidden');
+        }
+    }
+
     // =======================================================
     // 1. MÁSCARA DE CPF (Utilizando Utils)
     // =======================================================
@@ -4378,16 +4514,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('student-id').value = '';
         document.getElementById('modal-title').textContent = 'Adicionar Novo Aluno';
         
-        const dataNascInput = document.getElementById('data_nascimento');
         const passwordGroup = document.getElementById('password-group');
-        
-        if (dataNascInput) {
-            dataNascInput.parentElement.classList.remove('hidden');
-            dataNascInput.value = '';
-        }
+
+        mostrarCampoNascimento();
+        setDataNascimento('');
+
         if (passwordGroup) passwordGroup.classList.add('hidden');
-        
-        studentModal.showModal();
+                
+                studentModal.showModal();
     });
 
     function openEditModal(aluno) {
@@ -4410,11 +4544,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('fase').value = aluno.fase || '';
         
-        const dataNascInput = document.getElementById('data_nascimento');
-        if (dataNascInput) {
-            dataNascInput.value = aluno.data_nascimento || '';
-            dataNascInput.parentElement.classList.remove('hidden');
-        }
+        mostrarCampoNascimento();
+        setDataNascimento(aluno.data_nascimento || '');
 
         const passwordGroup = document.getElementById('password-group');
         if (passwordGroup) passwordGroup.classList.remove('hidden');
@@ -4453,7 +4584,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataNascInput = document.getElementById('data_nascimento');
 
         if (!dataNascInput || !dataNascInput.value) {
-            if (dataNascInput) toggleError(dataNascInput, true);
+            const dateTrigger = document.querySelector('#data-nascimento-picker .date-picker-trigger');
+            toggleError(dateTrigger || dataNascInput, true);
             showToast('Informe a data de nascimento.', 'error');
             return;
         }
@@ -4532,9 +4664,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const filterSelect = document.getElementById('filtro-curso');
             const modalSelect = document.getElementById('curso');
 
+            if (filterSelect) {
+                filterSelect.innerHTML = '<option value="">Todos</option>';
+            }
+
+            if (modalSelect) {
+                modalSelect.innerHTML = '<option value="">Selecione...</option>';
+            }
+
             cursos.forEach(curso => {
-                if (filterSelect) filterSelect.insertAdjacentHTML('beforeend', `<option value="${curso.id}">${curso.nome}</option>`);
-                if (modalSelect) modalSelect.insertAdjacentHTML('beforeend', `<option value="${curso.id}">${curso.nome}</option>`);
+                if (filterSelect) {
+                    filterSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${curso.id}">${curso.nome}</option>`
+                    );
+                }
+
+                if (modalSelect) {
+                    modalSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${curso.id}">${curso.nome}</option>`
+                    );
+                }
             });
             cursosCarregados = true;
         } catch (e) { console.error(e); }
@@ -4547,6 +4698,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicialização da página
     (async () => {
+        if (typeof setupDatePicker === 'function') {
+            setupDatePicker('data-nascimento-picker', 'data_nascimento', 'data_nascimento_text');
+        }
+
         await populateCourseSelects();
         fetchStudents(); 
     })();
@@ -5661,16 +5816,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailView = document.getElementById('student-detail-view');
     const studentListTbody = document.getElementById('student-list-tbody');
     const backBtn = document.getElementById('back-to-list-btn');
-    const filterBtn = document.querySelector('.btn-primary');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     const accordionPlaceholder = document.getElementById('accordion-placeholder');
     const courseFilterSelect = document.getElementById('curso');
 
-    // Variável global para armazenar dados para filtragem local (Cache)
     let allStudentsData = [];
 
     // =======================================================
-    // 1. POPULAR FILTROS (Cursos)
+    // 1. POPULAR CURSOS
     // =======================================================
     async function populateCourseFilter() {
         try {
@@ -5696,13 +5849,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - BUSCAR TODOS OS ALUNOS (COM FILTROS NO BACKEND)
+    // 2. BUSCAR ALUNOS (Backend)
     // =======================================================
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
 
         try {
-            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
             const filters = {
                 tipo: 'ALUNO',
                 search: document.getElementById('aluno').value.trim(),
@@ -5726,34 +5878,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
 
             const result = await response.json();
-            let allStudentsData = result.data || result;
-            if (!Array.isArray(allStudentsData)) allStudentsData = [];
+            let studentsData = result.data || result;
+            if (!Array.isArray(studentsData)) studentsData = [];
 
-            // Busca contagem de certificados (mantida)
+            // Contagem de certificados
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    }
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
 
                 if (certResponse.ok) {
                     const certResult = await certResponse.json();
                     const certificados = certResult.data || certResult;
-
                     const contagemPorAluno = {};
-                    if (Array.isArray(certificados)) {
-                        certificados.forEach(cert => {
-                            const alunoId = cert.aluno?.id || cert.aluno_id;
-                            if (alunoId) {
-                                contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
-                            }
-                        });
-                    }
 
-                    allStudentsData = allStudentsData.map(aluno => {
+                    certificados.forEach(cert => {
+                        const alunoId = cert.aluno?.id || cert.aluno_id;
+                        if (alunoId) contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
+                    });
+
+                    studentsData = studentsData.map(aluno => {
                         aluno.certificados_count = contagemPorAluno[aluno.id] || 0;
                         return aluno;
                     });
@@ -5762,39 +5906,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Não foi possível obter o total de solicitações.', e);
             }
 
-            // Atualiza a variável global
-            window.allStudentsData = allStudentsData; // para usar no render
-
+            allStudentsData = studentsData;
             renderStudentsTable();
 
         } catch (error) {
+            console.error(error);
             studentListTbody.innerHTML = `<tr><td colspan="5" style="color: var(--status-reprovado); text-align:center;">${error.message}</td></tr>`;
         }
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
+    // 3. RENDERIZAR TABELA
     // =======================================================
-
     function renderStudentsTable() {
-        const studentsArray = window.allStudentsData || [];
-
+        const studentsArray = allStudentsData || [];
         studentListTbody.innerHTML = '';
 
         if (studentsArray.length === 0) {
-            const searchTerm = document.getElementById('aluno').value.trim();
-            const matriculaTerm = document.getElementById('matricula').value.trim();
-            const cursoValue = document.getElementById('curso').value;
-            const dataInicio = document.getElementById('data-inicio').value;
-            const dataFim = document.getElementById('data-fim').value;
+            const hasFilter = document.getElementById('aluno').value.trim() || 
+                             document.getElementById('matricula').value.trim() || 
+                             document.getElementById('curso').value ||
+                             document.getElementById('data-inicio').value ||
+                             document.getElementById('data-fim').value;
 
-            let mensagem = 'Nenhum aluno cadastrado no momento.';
-            
-            if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
-                mensagem = 'Nenhum aluno encontrado com estes filtros.';
-            }
-
-            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">
+                ${hasFilter ? 'Nenhum aluno encontrado com estes filtros.' : 'Nenhum aluno cadastrado no momento.'}
+            </td></tr>`;
             return;
         }
 
@@ -5820,7 +5957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 4. DETALHES DO HISTÓRICO (Individual)
+    // 4. DETALHES DO ALUNO
     // =======================================================
     async function showDetailView(studentId, studentName) {
         listView.style.display = 'none';
@@ -5845,7 +5982,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             certificados.forEach(cert => {
-                // Utiliza as ferramentas globais do utils.js
                 const statusInfo = getStatusInfo(cert.status);
                 const filePath = cert.arquivo_url || cert.arquivo || cert.comprovante_url || '';
                 const dataEnvio = new Date(cert.created_at).toLocaleDateString('pt-BR');
@@ -5882,7 +6018,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 accordionPlaceholder.innerHTML += itemHTML;
             });
 
-            // Ativa o comportamento do acordeão
             setupAccordion();
             carregarPreviewsPdf();
 
@@ -5890,21 +6025,17 @@ document.addEventListener('DOMContentLoaded', () => {
             accordionPlaceholder.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
         }
     }
-    
-
 
     // =======================================================
-    // PREVIEW SEGURO DE PDF
-    // Evita que aviso do ngrok ou erro do backend quebre o layout.
+    // 5. PREVIEW PDF
     // =======================================================
     async function carregarPreviewsPdf() {
         const previewAreas = document.querySelectorAll('.pdf-preview-area');
 
         for (const area of previewAreas) {
             const rawPath = area.dataset.filePath;
-
             if (!rawPath) {
-                mostrarPreviewIndisponivel(area, 'Nenhum comprovante foi encontrado para esta atividade.');
+                mostrarPreviewIndisponivel(area, 'Nenhum comprovante encontrado.');
                 continue;
             }
 
@@ -5921,36 +6052,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const contentType = response.headers.get('content-type') || '';
 
-                if (!response.ok) {
-                    throw new Error('Arquivo indisponível.');
-                }
-
-                if (contentType.includes('text/html')) {
-                    throw new Error('O servidor retornou uma página HTML em vez do PDF.');
-                }
+                if (!response.ok) throw new Error('Arquivo indisponível.');
+                if (contentType.includes('text/html')) throw new Error('Servidor retornou HTML.');
 
                 const blob = await response.blob();
-                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
 
                 area.innerHTML = `
-                    <iframe
-                        class="pdf-preview"
-                        src="${pdfUrl}"
-                        title="Pré-visualização do comprovante">
-                    </iframe>
-
+                    <iframe class="pdf-preview" src="${pdfUrl}" title="Pré-visualização"></iframe>
                     <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
-                        <i class="fas fa-up-right-from-square"></i>
-                        Abrir comprovante em nova guia
+                        <i class="fas fa-up-right-from-square"></i> Abrir em nova guia
                     </a>
                 `;
             } catch (error) {
-                console.warn('Erro ao carregar comprovante:', error);
-                mostrarPreviewIndisponivel(
-                    area,
-                    'Não foi possível carregar o comprovante.'
-                );
+                console.warn('Erro ao carregar PDF:', error);
+                mostrarPreviewIndisponivel(area, 'Não foi possível carregar o comprovante.');
             }
         }
     }
@@ -5966,38 +6082,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // EVENTOS E INICIALIZAÇÃO
+    // 6. EVENTOS E INICIALIZAÇÃO
     // =======================================================
-
     const filterBtn = document.querySelector('.btn-primary');
     if (filterBtn) {
-        filterBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            fetchStudents();        // ← Importante: usa fetchStudents
-        });
+        filterBtn.addEventListener('click', (e) => { e.preventDefault(); fetchStudents(); });
     }
 
-    // Suporte ao Enter
-    const filterInputsSec = [
-        document.getElementById('aluno'),
-        document.getElementById('matricula'),
-        document.getElementById('curso'),
-        document.getElementById('data-inicio'),
-        document.getElementById('data-fim')
-    ];
-
-    filterInputsSec.forEach(input => {
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    fetchStudents();    // ← Importante: usa fetchStudents
-                }
-            });
-        }
+    // Enter nos filtros
+    const filterInputs = ['aluno','matricula','curso','data-inicio','data-fim'];
+    filterInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') { e.preventDefault(); fetchStudents(); }
+        });
     });
 
-    // Limpar Filtros
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
             document.getElementById('aluno').value = '';
@@ -6005,7 +6105,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('curso').value = '';
             document.getElementById('data-inicio').value = '';
             document.getElementById('data-fim').value = '';
-            fetchStudents();           // ← Importante: usa fetchStudents
+            document.getElementById('data-inicio_text').textContent = 'dd/mm/aaaa';
+            document.getElementById('data-fim_text').textContent = 'dd/mm/aaaa';
+            fetchStudents();
         });
     }
 
@@ -6021,14 +6123,13 @@ document.addEventListener('DOMContentLoaded', () => {
         await populateCourseFilter();
         await fetchStudents();
 
-        // Inicializa calendários customizados
+        // Calendários customizados (igual ao cadastro-horas)
         if (typeof setupDatePicker === 'function') {
             setupDatePicker('data-inicio-picker', 'data-inicio', 'data-inicio_text');
             setupDatePicker('data-fim-picker', 'data-fim', 'data-fim_text');
         }
     })();
 });
-
 ```
 
 ## Arquivo: js\login.js
@@ -7651,10 +7752,48 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
     const trigger = wrapper.querySelector('.date-picker-trigger');
     const calendar = wrapper.querySelector('.shc-calendar');
 
-    if (!trigger || !calendar || !hiddenInput) return;
+    if (!trigger || !calendar || !hiddenInput || !displaySpan) return;
+
+    // Se o HTML do calendário estiver vazio ou incompleto, monta a estrutura automaticamente
+    if (
+        !calendar.querySelector('.shc-calendar-title') ||
+        !calendar.querySelector('.shc-calendar-days') ||
+        !calendar.querySelector('.shc-calendar-today') ||
+        !calendar.querySelector('.shc-calendar-clear')
+    ) {
+        calendar.innerHTML = `
+            <div class="shc-calendar-header">
+                <button type="button" class="shc-calendar-nav" data-action="prev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+
+                <button type="button" class="shc-calendar-title"></button>
+
+                <button type="button" class="shc-calendar-nav" data-action="next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="shc-calendar-weekdays">
+                <span>D</span>
+                <span>S</span>
+                <span>T</span>
+                <span>Q</span>
+                <span>Q</span>
+                <span>S</span>
+                <span>S</span>
+            </div>
+
+            <div class="shc-calendar-days"></div>
+
+            <div class="shc-calendar-footer">
+                <button type="button" class="shc-calendar-clear">Limpar</button>
+                <button type="button" class="shc-calendar-today">Hoje</button>
+            </div>
+        `;
+    }
 
     const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-
     let mesAtual = new Date().getMonth();
     let anoAtual = new Date().getFullYear();
 
