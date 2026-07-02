@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Falha ao carregar a lista de alunos.');
 
             const result = await response.json();
-            let allStudentsData = result.data || result;
+            let studentsData = result.data || result;
             if (!Array.isArray(allStudentsData)) allStudentsData = [];
 
             // Busca contagem de certificados (mantida)
@@ -313,11 +313,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENTOS E INICIALIZAÇÃO
     // =======================================================
 
-    const filterBtn = document.querySelector('.btn-primary');
-    if (filterBtn) {
-        filterBtn.addEventListener('click', (e) => {
+    // Botão Filtrar (nome alterado para evitar conflito com outros arquivos)
+    const secretariaFilterBtn = document.querySelector('.btn-primary');
+    if (secretariaFilterBtn) {
+        secretariaFilterBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            fetchStudents();        // ← Importante: usa fetchStudents
+            fetchStudents();
         });
     }
 
@@ -335,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    fetchStudents();    // ← Importante: usa fetchStudents
+                    fetchStudents();
                 }
             });
         }
@@ -349,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('curso').value = '';
             document.getElementById('data-inicio').value = '';
             document.getElementById('data-fim').value = '';
-            fetchStudents();           // ← Importante: usa fetchStudents
+            fetchStudents();
         });
     }
 
@@ -365,7 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await populateCourseFilter();
         await fetchStudents();
 
-        // Inicializa calendários customizados
         if (typeof setupDatePicker === 'function') {
             setupDatePicker('data-inicio-picker', 'data-inicio', 'data-inicio_text');
             setupDatePicker('data-fim-picker', 'data-fim', 'data-fim_text');
