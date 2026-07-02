@@ -3758,11 +3758,15 @@ function injectHeader() {
     // 1. Captura configurações passadas via HTML
     const backUrl = header.getAttribute('data-back-url');
     const backHistory = header.hasAttribute('data-back-history');
+    const manualBack = header.hasAttribute('data-manual-back');
     const hideLogout = header.hasAttribute('data-hide-logout');
 
     // 2. Define o conteúdo do lado esquerdo (Voltar)
     let leftContent = '<div class="header-spacer"></div>'; 
-    if (backUrl) {
+
+    if (manualBack) {
+        leftContent = `<a href="#" id="manual-back-btn" class="logout-btn"><i class="fas fa-chevron-circle-left"></i> Voltar</a>`;
+    } else if (backUrl) {
         leftContent = `<a href="${backUrl}" class="logout-btn"><i class="fas fa-chevron-circle-left"></i> Voltar</a>`;
     } else if (backHistory) {
         leftContent = `<a href="javascript:history.back()" class="logout-btn"><i class="fas fa-arrow-left"></i> Voltar</a>`;
@@ -8705,7 +8709,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </head>
 <body class="theme-default dotted-background">
     
-    <header id="app-header" data-back-history="true"></header>
+    <header id="app-header" data-manual-back="true" data-hide-logout></header>
 
     <main class="main-container">
         <h1 class="page-title"><i class="fas fa-book"></i> Manual do Usuário</h1>
@@ -9182,6 +9186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </main>
 
     <script src="js/utils.js"></script>
+    <script src="js/components.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const manualBackBtn = document.getElementById('manual-back-btn');

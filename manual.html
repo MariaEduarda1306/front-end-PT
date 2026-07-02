@@ -34,7 +34,7 @@
 </head>
 <body class="theme-default dotted-background">
     
-    <header id="app-header" data-back-history="true"></header>
+    <header id="app-header" data-manual-back="true" data-hide-logout></header>
 
     <main class="main-container">
         <h1 class="page-title"><i class="fas fa-book"></i> Manual do Usuário</h1>
@@ -511,6 +511,7 @@
     </main>
 
     <script src="js/utils.js"></script>
+    <script src="js/components.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const manualBackBtn = document.getElementById('manual-back-btn');
