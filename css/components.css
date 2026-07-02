@@ -1444,3 +1444,16 @@ body {
         height: 32rem;
     }
 }
+
+.date-picker-text-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.date-picker-text-input::placeholder {
+    color: var(--text-secondary);
+}

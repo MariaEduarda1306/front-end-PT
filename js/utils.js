@@ -555,13 +555,13 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
     if (!wrapper) return;
 
     const hiddenInput = document.getElementById(hiddenInputId);
-    const displaySpan = document.getElementById(displaySpanId);
+    const displayField = document.getElementById(displaySpanId);
     const trigger = wrapper.querySelector('.date-picker-trigger');
     const calendar = wrapper.querySelector('.shc-calendar');
 
-    if (!trigger || !calendar || !hiddenInput || !displaySpan) return;
+    if (!trigger || !calendar || !hiddenInput || !displayField) return;
 
-    // Se o HTML do calendário estiver vazio ou incompleto, monta a estrutura automaticamente
+    // Se o HTML do calendário estiver vazio ou incompleto, monta automaticamente
     if (
         !calendar.querySelector('.shc-calendar-title') ||
         !calendar.querySelector('.shc-calendar-days') ||
@@ -600,23 +600,108 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
         `;
     }
 
-    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    const meses = [
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ];
+
     let mesAtual = new Date().getMonth();
     let anoAtual = new Date().getFullYear();
 
-    function pad(n) { return String(n).padStart(2, '0'); }
+    function pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function setDisplayValue(value) {
+        if ('value' in displayField) {
+            displayField.value = value;
+        } else {
+            displayField.textContent = value;
+        }
+    }
+
+    function getDisplayValue() {
+        return 'value' in displayField
+            ? displayField.value
+            : displayField.textContent;
+    }
 
     function formatarBR(data) {
-        return `${pad(data.getDate())}/${pad(data.getMonth()+1)}/${data.getFullYear()}`;
+        return `${pad(data.getDate())}/${pad(data.getMonth() + 1)}/${data.getFullYear()}`;
     }
 
     function formatarISO(data) {
-        return `${data.getFullYear()}-${pad(data.getMonth()+1)}-${pad(data.getDate())}`;
+        return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}`;
+    }
+
+    function aplicarMascaraData(value) {
+        value = value.replace(/\D/g, '');
+
+        if (value.length > 8) {
+            value = value.slice(0, 8);
+        }
+
+        value = value.replace(/(\d{2})(\d)/, '$1/$2');
+        value = value.replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+
+        return value;
+    }
+
+    function converterBRParaISO(value) {
+        const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+        if (!match) return null;
+
+        const dia = Number(match[1]);
+        const mes = Number(match[2]);
+        const ano = Number(match[3]);
+
+        const data = new Date(ano, mes - 1, dia);
+
+        const dataValida =
+            data.getFullYear() === ano &&
+            data.getMonth() === mes - 1 &&
+            data.getDate() === dia;
+
+        if (!dataValida) return null;
+
+        return {
+            iso: `${ano}-${pad(mes)}-${pad(dia)}`,
+            data
+        };
+    }
+
+    function sincronizarDataDigitada() {
+        const valor = getDisplayValue().trim();
+
+        if (!valor) {
+            hiddenInput.value = '';
+            setDisplayValue('');
+            return;
+        }
+
+        const resultado = converterBRParaISO(valor);
+
+        if (!resultado) {
+            toggleError(trigger, true);
+            showToast('Digite uma data válida no formato dd/mm/aaaa.', 'error');
+            return;
+        }
+
+        toggleError(trigger, false);
+
+        hiddenInput.value = resultado.iso;
+        mesAtual = resultado.data.getMonth();
+        anoAtual = resultado.data.getFullYear();
+
+        renderizarCalendario();
     }
 
     function renderizarCalendario() {
         const title = calendar.querySelector('.shc-calendar-title');
         const daysContainer = calendar.querySelector('.shc-calendar-days');
+
+        if (!title || !daysContainer) return;
 
         title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
         daysContainer.innerHTML = '';
@@ -639,12 +724,15 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
             const data = new Date(anoAtual, mesAtual, dia);
             const iso = formatarISO(data);
 
-            if (hiddenInput.value === iso) btn.classList.add('is-selected');
+            if (hiddenInput.value === iso) {
+                btn.classList.add('is-selected');
+            }
 
             btn.addEventListener('click', () => {
                 hiddenInput.value = iso;
-                displaySpan.textContent = formatarBR(data);
+                setDisplayValue(formatarBR(data));
                 calendar.hidden = true;
+                toggleError(trigger, false);
             });
 
             daysContainer.appendChild(btn);
@@ -653,40 +741,87 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
 
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        calendar.hidden = !calendar.hidden;
-        if (!calendar.hidden) renderizarCalendario();
+
+        if (e.target === displayField) {
+            calendar.hidden = false;
+        } else {
+            calendar.hidden = !calendar.hidden;
+        }
+
+        if (!calendar.hidden) {
+            renderizarCalendario();
+        }
     });
 
-    // Navegação
+    if ('value' in displayField) {
+        displayField.addEventListener('input', () => {
+            displayField.value = aplicarMascaraData(displayField.value);
+            toggleError(trigger, false);
+        });
+
+        displayField.addEventListener('blur', () => {
+            sincronizarDataDigitada();
+        });
+
+        displayField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sincronizarDataDigitada();
+                calendar.hidden = true;
+            }
+        });
+    }
+
     calendar.querySelectorAll('.shc-calendar-nav').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.dataset.action === 'prev') {
                 mesAtual--;
-                if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+
+                if (mesAtual < 0) {
+                    mesAtual = 11;
+                    anoAtual--;
+                }
             } else {
                 mesAtual++;
-                if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+
+                if (mesAtual > 11) {
+                    mesAtual = 0;
+                    anoAtual++;
+                }
             }
+
             renderizarCalendario();
         });
     });
 
-    calendar.querySelector('.shc-calendar-today').addEventListener('click', () => {
-        const hoje = new Date();
-        mesAtual = hoje.getMonth();
-        anoAtual = hoje.getFullYear();
-        hiddenInput.value = formatarISO(hoje);
-        displaySpan.textContent = formatarBR(hoje);
-        calendar.hidden = true;
-    });
+    const todayBtn = calendar.querySelector('.shc-calendar-today');
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => {
+            const hoje = new Date();
 
-    calendar.querySelector('.shc-calendar-clear').addEventListener('click', () => {
-        hiddenInput.value = '';
-        displaySpan.textContent = 'dd/mm/aaaa';
-        calendar.hidden = true;
-    });
+            mesAtual = hoje.getMonth();
+            anoAtual = hoje.getFullYear();
+
+            hiddenInput.value = formatarISO(hoje);
+            setDisplayValue(formatarBR(hoje));
+            calendar.hidden = true;
+            toggleError(trigger, false);
+        });
+    }
+
+    const clearBtn = calendar.querySelector('.shc-calendar-clear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            hiddenInput.value = '';
+            setDisplayValue('');
+            calendar.hidden = true;
+            toggleError(trigger, false);
+        });
+    }
 
     document.addEventListener('click', (e) => {
-        if (!wrapper.contains(e.target)) calendar.hidden = true;
+        if (!wrapper.contains(e.target)) {
+            calendar.hidden = true;
+        }
     });
 }
