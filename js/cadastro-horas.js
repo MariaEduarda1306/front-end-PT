@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const form = document.getElementById('cadastro-form');
     const submitButton = form.querySelector('button[type="submit"]');
+
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     
     // Captura o ID da URL se estiver em modo de edição
     const urlParams = new URLSearchParams(window.location.search);
@@ -270,6 +273,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!editId && fields.arquivo.files.length === 0) {
             toggleError(fileWrapper, true);
             hasError = true;
+        }
+
+        if (fields.arquivo.files.length > 0) {
+            const arquivo = fields.arquivo.files[0];
+
+            if (arquivo.size > MAX_FILE_SIZE_BYTES) {
+                fields.arquivo.value = '';
+                document.getElementById('file-name').innerHTML = '';
+                const fileUploadText = fileWrapper.querySelector('.file-upload-text');
+                if (fileUploadText) fileUploadText.style.display = 'block';
+
+                toggleError(fileWrapper, true);
+                showToast(`O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB} MB.`, 'error');
+                return;
+            }
+
+            if (arquivo.type !== 'application/pdf' && !arquivo.name.toLowerCase().endsWith('.pdf')) {
+                fields.arquivo.value = '';
+                document.getElementById('file-name').innerHTML = '';
+                const fileUploadText = fileWrapper.querySelector('.file-upload-text');
+                if (fileUploadText) fileUploadText.style.display = 'block';
+
+                toggleError(fileWrapper, true);
+                showToast('Envie apenas arquivos em formato PDF.', 'error');
+                return;
+            }
         }
 
         if (hasError) {
