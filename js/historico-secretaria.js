@@ -10,11 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const accordionPlaceholder = document.getElementById('accordion-placeholder');
     const courseFilterSelect = document.getElementById('curso');
 
-    // Variável global para armazenar dados para filtragem local (Cache)
     let allStudentsData = [];
 
     // =======================================================
-    // 1. POPULAR FILTROS (Cursos)
+    // 1. POPULAR CURSOS
     // =======================================================
     async function populateCourseFilter() {
         try {
@@ -40,13 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 2. READ - BUSCAR TODOS OS ALUNOS (COM FILTROS NO BACKEND)
+    // 2. BUSCAR ALUNOS (Backend)
     // =======================================================
     async function fetchStudents() {
         studentListTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Carregando alunos...</td></tr>';
 
         try {
-            // === MONTAGEM DOS FILTROS PARA O BACKEND ===
             const filters = {
                 tipo: 'ALUNO',
                 search: document.getElementById('aluno').value.trim(),
@@ -71,33 +69,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const result = await response.json();
             let studentsData = result.data || result;
-            if (!Array.isArray(allStudentsData)) allStudentsData = [];
+            if (!Array.isArray(studentsData)) studentsData = [];
 
-            // Busca contagem de certificados (mantida)
+            // Contagem de certificados
             try {
                 const certResponse = await fetch(`${API_BASE_URL}/api/certificados`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    }
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
 
                 if (certResponse.ok) {
                     const certResult = await certResponse.json();
                     const certificados = certResult.data || certResult;
-
                     const contagemPorAluno = {};
-                    if (Array.isArray(certificados)) {
-                        certificados.forEach(cert => {
-                            const alunoId = cert.aluno?.id || cert.aluno_id;
-                            if (alunoId) {
-                                contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
-                            }
-                        });
-                    }
 
-                    allStudentsData = allStudentsData.map(aluno => {
+                    certificados.forEach(cert => {
+                        const alunoId = cert.aluno?.id || cert.aluno_id;
+                        if (alunoId) contagemPorAluno[alunoId] = (contagemPorAluno[alunoId] || 0) + 1;
+                    });
+
+                    studentsData = studentsData.map(aluno => {
                         aluno.certificados_count = contagemPorAluno[aluno.id] || 0;
                         return aluno;
                     });
@@ -106,39 +96,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Não foi possível obter o total de solicitações.', e);
             }
 
-            // Atualiza a variável global
-            window.allStudentsData = allStudentsData; // para usar no render
-
+            allStudentsData = studentsData;
             renderStudentsTable();
 
         } catch (error) {
+            console.error(error);
             studentListTbody.innerHTML = `<tr><td colspan="5" style="color: var(--status-reprovado); text-align:center;">${error.message}</td></tr>`;
         }
     }
 
     // =======================================================
-    // 3. RENDERIZAR TABELA (SEM FILTRO CLIENT-SIDE)
+    // 3. RENDERIZAR TABELA
     // =======================================================
-
     function renderStudentsTable() {
-        const studentsArray = window.allStudentsData || [];
-
+        const studentsArray = allStudentsData || [];
         studentListTbody.innerHTML = '';
 
         if (studentsArray.length === 0) {
-            const searchTerm = document.getElementById('aluno').value.trim();
-            const matriculaTerm = document.getElementById('matricula').value.trim();
-            const cursoValue = document.getElementById('curso').value;
-            const dataInicio = document.getElementById('data-inicio').value;
-            const dataFim = document.getElementById('data-fim').value;
+            const hasFilter = document.getElementById('aluno').value.trim() || 
+                             document.getElementById('matricula').value.trim() || 
+                             document.getElementById('curso').value ||
+                             document.getElementById('data-inicio').value ||
+                             document.getElementById('data-fim').value;
 
-            let mensagem = 'Nenhum aluno cadastrado no momento.';
-            
-            if (searchTerm || matriculaTerm || cursoValue || dataInicio || dataFim) {
-                mensagem = 'Nenhum aluno encontrado com estes filtros.';
-            }
-
-            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">${mensagem}</td></tr>`;
+            studentListTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem 1rem;">
+                ${hasFilter ? 'Nenhum aluno encontrado com estes filtros.' : 'Nenhum aluno cadastrado no momento.'}
+            </td></tr>`;
             return;
         }
 
@@ -164,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // 4. DETALHES DO HISTÓRICO (Individual)
+    // 4. DETALHES DO ALUNO
     // =======================================================
     async function showDetailView(studentId, studentName) {
         listView.style.display = 'none';
@@ -189,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             certificados.forEach(cert => {
-                // Utiliza as ferramentas globais do utils.js
                 const statusInfo = getStatusInfo(cert.status);
                 const filePath = cert.arquivo_url || cert.arquivo || cert.comprovante_url || '';
                 const dataEnvio = new Date(cert.created_at).toLocaleDateString('pt-BR');
@@ -226,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 accordionPlaceholder.innerHTML += itemHTML;
             });
 
-            // Ativa o comportamento do acordeão
             setupAccordion();
             carregarPreviewsPdf();
 
@@ -234,21 +215,17 @@ document.addEventListener('DOMContentLoaded', () => {
             accordionPlaceholder.innerHTML = `<p style="color: var(--status-reprovado); text-align:center;">${error.message}</p>`;
         }
     }
-    
-
 
     // =======================================================
-    // PREVIEW SEGURO DE PDF
-    // Evita que aviso do ngrok ou erro do backend quebre o layout.
+    // 5. PREVIEW PDF
     // =======================================================
     async function carregarPreviewsPdf() {
         const previewAreas = document.querySelectorAll('.pdf-preview-area');
 
         for (const area of previewAreas) {
             const rawPath = area.dataset.filePath;
-
             if (!rawPath) {
-                mostrarPreviewIndisponivel(area, 'Nenhum comprovante foi encontrado para esta atividade.');
+                mostrarPreviewIndisponivel(area, 'Nenhum comprovante encontrado.');
                 continue;
             }
 
@@ -265,36 +242,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const contentType = response.headers.get('content-type') || '';
 
-                if (!response.ok) {
-                    throw new Error('Arquivo indisponível.');
-                }
-
-                if (contentType.includes('text/html')) {
-                    throw new Error('O servidor retornou uma página HTML em vez do PDF.');
-                }
+                if (!response.ok) throw new Error('Arquivo indisponível.');
+                if (contentType.includes('text/html')) throw new Error('Servidor retornou HTML.');
 
                 const blob = await response.blob();
-                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
 
                 area.innerHTML = `
-                    <iframe
-                        class="pdf-preview"
-                        src="${pdfUrl}"
-                        title="Pré-visualização do comprovante">
-                    </iframe>
-
+                    <iframe class="pdf-preview" src="${pdfUrl}" title="Pré-visualização"></iframe>
                     <a class="pdf-open-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
-                        <i class="fas fa-up-right-from-square"></i>
-                        Abrir comprovante em nova guia
+                        <i class="fas fa-up-right-from-square"></i> Abrir em nova guia
                     </a>
                 `;
             } catch (error) {
-                console.warn('Erro ao carregar comprovante:', error);
-                mostrarPreviewIndisponivel(
-                    area,
-                    'Não foi possível carregar o comprovante.'
-                );
+                console.warn('Erro ao carregar PDF:', error);
+                mostrarPreviewIndisponivel(area, 'Não foi possível carregar o comprovante.');
             }
         }
     }
@@ -310,39 +272,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =======================================================
-    // EVENTOS E INICIALIZAÇÃO
+    // 6. EVENTOS E INICIALIZAÇÃO
     // =======================================================
-
-    // Botão Filtrar (nome alterado para evitar conflito com outros arquivos)
-    const secretariaFilterBtn = document.querySelector('.btn-primary');
-    if (secretariaFilterBtn) {
-        secretariaFilterBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            fetchStudents();
-        });
+    const filterBtn = document.querySelector('.btn-primary');
+    if (filterBtn) {
+        filterBtn.addEventListener('click', (e) => { e.preventDefault(); fetchStudents(); });
     }
 
-    // Suporte ao Enter
-    const filterInputsSec = [
-        document.getElementById('aluno'),
-        document.getElementById('matricula'),
-        document.getElementById('curso'),
-        document.getElementById('data-inicio'),
-        document.getElementById('data-fim')
-    ];
-
-    filterInputsSec.forEach(input => {
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    fetchStudents();
-                }
-            });
-        }
+    // Enter nos filtros
+    const filterInputs = ['aluno','matricula','curso','data-inicio','data-fim'];
+    filterInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') { e.preventDefault(); fetchStudents(); }
+        });
     });
 
-    // Limpar Filtros
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
             document.getElementById('aluno').value = '';
@@ -350,6 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('curso').value = '';
             document.getElementById('data-inicio').value = '';
             document.getElementById('data-fim').value = '';
+            document.getElementById('data-inicio_text').textContent = 'dd/mm/aaaa';
+            document.getElementById('data-fim_text').textContent = 'dd/mm/aaaa';
             fetchStudents();
         });
     }
@@ -366,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await populateCourseFilter();
         await fetchStudents();
 
+        // Calendários customizados (igual ao cadastro-horas)
         if (typeof setupDatePicker === 'function') {
             setupDatePicker('data-inicio-picker', 'data-inicio', 'data-inicio_text');
             setupDatePicker('data-fim-picker', 'data-fim', 'data-fim_text');
