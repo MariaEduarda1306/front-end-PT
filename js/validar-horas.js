@@ -166,18 +166,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progressLabel) progressLabel.textContent = `${totalApp} / ${totalReq} Horas`;
 
                 if (breakdownContainer && progressData.horas_por_categoria) {
+                    breakdownContainer.innerHTML = '';
+
                     for (const [cat, hrs] of Object.entries(progressData.horas_por_categoria)) {
-                        let cPerc = Math.min((hrs / totalReq) * 100, 100);
-                        breakdownContainer.insertAdjacentHTML('beforeend', `
-                            <div class="area-progress" style="margin-bottom: 0;">
+                        const areaHTML = `
+                            <div class="area-progress" style="margin-bottom: 0.8rem;">
                                 <div class="area-label" style="font-size: 1.2rem;">
                                     <span>${cat}</span>
-                                    <span>${hrs}h (${cPerc.toFixed(1)}%)</span>
+                                    <span style="font-weight: 500;">${hrs}h</span>
                                 </div>
-                                <div class="mini-progress-bar" style="height: 0.4rem;">
-                                    <div class="mini-progress-bar-fill" style="width: ${cPerc}%;"></div>
+                                <div class="mini-progress-bar" style="height: 0.5rem;">
+                                    <div class="mini-progress-bar-fill" style="width: ${Math.min((hrs / totalReq) * 100, 100)}%;"></div>
                                 </div>
-                            </div>`);
+                            </div>`;
+                        breakdownContainer.insertAdjacentHTML('beforeend', areaHTML);
                     }
                 }
             }

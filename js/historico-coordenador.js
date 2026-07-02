@@ -210,16 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progressLabel) progressLabel.textContent = `${totalCompleted} / ${totalRequired} Horas`;
 
                 if (breakdownContainer && progressData.horas_por_categoria) {
+                    breakdownContainer.innerHTML = '';
+
                     for (const [categoria, horas] of Object.entries(progressData.horas_por_categoria)) {
-                        let catPercentage = Math.min((horas / totalRequired) * 100, 100);
                         const areaHTML = `
-                            <div class="area-progress" style="margin-bottom: 0;">
-                                <div class="area-label" style="margin-bottom: 0.2rem; font-size: 1.2rem;">
+                            <div class="area-progress" style="margin-bottom: 0.8rem;">
+                                <div class="area-label" style="margin-bottom: 0.3rem; font-size: 1.25rem;">
                                     <span>${categoria}</span>
-                                    <span>${horas}h (${catPercentage.toFixed(1)}%)</span>
+                                    <span style="font-weight: 500;">${horas}h</span>
                                 </div>
-                                <div class="mini-progress-bar" style="height: 0.4rem;">
-                                    <div class="mini-progress-bar-fill" style="width: ${catPercentage}%;"></div>
+                                <div class="mini-progress-bar" style="height: 0.5rem;">
+                                    <div class="mini-progress-bar-fill" style="width: ${Math.min((horas / totalRequired) * 100, 100)}%;"></div>
                                 </div>
                             </div>
                         `;
