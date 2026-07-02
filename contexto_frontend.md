@@ -1837,6 +1837,19 @@ body {
         height: 32rem;
     }
 }
+
+.date-picker-text-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.date-picker-text-input::placeholder {
+    color: var(--text-secondary);
+}
 ```
 
 ## Arquivo: css\layout.css
@@ -2684,10 +2697,19 @@ dialog,
                     <div class="date-picker-wrapper" id="data-nascimento-picker">
                         <input type="hidden" id="data_nascimento" name="data_nascimento">
 
-                        <button type="button" class="date-picker-trigger">
+                        <div class="date-picker-trigger" tabindex="0">
                             <i class="fas fa-calendar-days" aria-hidden="true"></i>
-                            <span id="data_nascimento_text">dd/mm/aaaa</span>
-                        </button>
+
+                            <input 
+                                type="text"
+                                id="data_nascimento_text"
+                                class="date-picker-text-input"
+                                placeholder="dd/mm/aaaa"
+                                maxlength="10"
+                                inputmode="numeric"
+                                autocomplete="off"
+                            >
+                        </div>
 
                         <div class="shc-calendar" hidden>
                             <div class="shc-calendar-header">
@@ -5498,16 +5520,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progressLabel) progressLabel.textContent = `${totalCompleted} / ${totalRequired} Horas`;
 
                 if (breakdownContainer && progressData.horas_por_categoria) {
+                    breakdownContainer.innerHTML = '';
+
                     for (const [categoria, horas] of Object.entries(progressData.horas_por_categoria)) {
-                        let catPercentage = Math.min((horas / totalRequired) * 100, 100);
                         const areaHTML = `
-                            <div class="area-progress" style="margin-bottom: 0;">
-                                <div class="area-label" style="margin-bottom: 0.2rem; font-size: 1.2rem;">
+                            <div class="area-progress" style="margin-bottom: 0.8rem;">
+                                <div class="area-label" style="margin-bottom: 0.3rem; font-size: 1.25rem;">
                                     <span>${categoria}</span>
-                                    <span>${horas}h (${catPercentage.toFixed(1)}%)</span>
+                                    <span style="font-weight: 500;">${horas}h</span>
                                 </div>
-                                <div class="mini-progress-bar" style="height: 0.4rem;">
-                                    <div class="mini-progress-bar-fill" style="width: ${catPercentage}%;"></div>
+                                <div class="mini-progress-bar" style="height: 0.5rem;">
+                                    <div class="mini-progress-bar-fill" style="width: ${Math.min((horas / totalRequired) * 100, 100)}%;"></div>
                                 </div>
                             </div>
                         `;
@@ -7748,13 +7771,13 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
     if (!wrapper) return;
 
     const hiddenInput = document.getElementById(hiddenInputId);
-    const displaySpan = document.getElementById(displaySpanId);
+    const displayField = document.getElementById(displaySpanId);
     const trigger = wrapper.querySelector('.date-picker-trigger');
     const calendar = wrapper.querySelector('.shc-calendar');
 
-    if (!trigger || !calendar || !hiddenInput || !displaySpan) return;
+    if (!trigger || !calendar || !hiddenInput || !displayField) return;
 
-    // Se o HTML do calendário estiver vazio ou incompleto, monta a estrutura automaticamente
+    // Se o HTML do calendário estiver vazio ou incompleto, monta automaticamente
     if (
         !calendar.querySelector('.shc-calendar-title') ||
         !calendar.querySelector('.shc-calendar-days') ||
@@ -7793,23 +7816,108 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
         `;
     }
 
-    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    const meses = [
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ];
+
     let mesAtual = new Date().getMonth();
     let anoAtual = new Date().getFullYear();
 
-    function pad(n) { return String(n).padStart(2, '0'); }
+    function pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function setDisplayValue(value) {
+        if ('value' in displayField) {
+            displayField.value = value;
+        } else {
+            displayField.textContent = value;
+        }
+    }
+
+    function getDisplayValue() {
+        return 'value' in displayField
+            ? displayField.value
+            : displayField.textContent;
+    }
 
     function formatarBR(data) {
-        return `${pad(data.getDate())}/${pad(data.getMonth()+1)}/${data.getFullYear()}`;
+        return `${pad(data.getDate())}/${pad(data.getMonth() + 1)}/${data.getFullYear()}`;
     }
 
     function formatarISO(data) {
-        return `${data.getFullYear()}-${pad(data.getMonth()+1)}-${pad(data.getDate())}`;
+        return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}`;
+    }
+
+    function aplicarMascaraData(value) {
+        value = value.replace(/\D/g, '');
+
+        if (value.length > 8) {
+            value = value.slice(0, 8);
+        }
+
+        value = value.replace(/(\d{2})(\d)/, '$1/$2');
+        value = value.replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+
+        return value;
+    }
+
+    function converterBRParaISO(value) {
+        const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+        if (!match) return null;
+
+        const dia = Number(match[1]);
+        const mes = Number(match[2]);
+        const ano = Number(match[3]);
+
+        const data = new Date(ano, mes - 1, dia);
+
+        const dataValida =
+            data.getFullYear() === ano &&
+            data.getMonth() === mes - 1 &&
+            data.getDate() === dia;
+
+        if (!dataValida) return null;
+
+        return {
+            iso: `${ano}-${pad(mes)}-${pad(dia)}`,
+            data
+        };
+    }
+
+    function sincronizarDataDigitada() {
+        const valor = getDisplayValue().trim();
+
+        if (!valor) {
+            hiddenInput.value = '';
+            setDisplayValue('');
+            return;
+        }
+
+        const resultado = converterBRParaISO(valor);
+
+        if (!resultado) {
+            toggleError(trigger, true);
+            showToast('Digite uma data válida no formato dd/mm/aaaa.', 'error');
+            return;
+        }
+
+        toggleError(trigger, false);
+
+        hiddenInput.value = resultado.iso;
+        mesAtual = resultado.data.getMonth();
+        anoAtual = resultado.data.getFullYear();
+
+        renderizarCalendario();
     }
 
     function renderizarCalendario() {
         const title = calendar.querySelector('.shc-calendar-title');
         const daysContainer = calendar.querySelector('.shc-calendar-days');
+
+        if (!title || !daysContainer) return;
 
         title.textContent = `${meses[mesAtual]} de ${anoAtual}`;
         daysContainer.innerHTML = '';
@@ -7832,12 +7940,15 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
             const data = new Date(anoAtual, mesAtual, dia);
             const iso = formatarISO(data);
 
-            if (hiddenInput.value === iso) btn.classList.add('is-selected');
+            if (hiddenInput.value === iso) {
+                btn.classList.add('is-selected');
+            }
 
             btn.addEventListener('click', () => {
                 hiddenInput.value = iso;
-                displaySpan.textContent = formatarBR(data);
+                setDisplayValue(formatarBR(data));
                 calendar.hidden = true;
+                toggleError(trigger, false);
             });
 
             daysContainer.appendChild(btn);
@@ -7846,41 +7957,88 @@ function setupDatePicker(wrapperId, hiddenInputId, displaySpanId) {
 
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        calendar.hidden = !calendar.hidden;
-        if (!calendar.hidden) renderizarCalendario();
+
+        if (e.target === displayField) {
+            calendar.hidden = false;
+        } else {
+            calendar.hidden = !calendar.hidden;
+        }
+
+        if (!calendar.hidden) {
+            renderizarCalendario();
+        }
     });
 
-    // Navegação
+    if ('value' in displayField) {
+        displayField.addEventListener('input', () => {
+            displayField.value = aplicarMascaraData(displayField.value);
+            toggleError(trigger, false);
+        });
+
+        displayField.addEventListener('blur', () => {
+            sincronizarDataDigitada();
+        });
+
+        displayField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sincronizarDataDigitada();
+                calendar.hidden = true;
+            }
+        });
+    }
+
     calendar.querySelectorAll('.shc-calendar-nav').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.dataset.action === 'prev') {
                 mesAtual--;
-                if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+
+                if (mesAtual < 0) {
+                    mesAtual = 11;
+                    anoAtual--;
+                }
             } else {
                 mesAtual++;
-                if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+
+                if (mesAtual > 11) {
+                    mesAtual = 0;
+                    anoAtual++;
+                }
             }
+
             renderizarCalendario();
         });
     });
 
-    calendar.querySelector('.shc-calendar-today').addEventListener('click', () => {
-        const hoje = new Date();
-        mesAtual = hoje.getMonth();
-        anoAtual = hoje.getFullYear();
-        hiddenInput.value = formatarISO(hoje);
-        displaySpan.textContent = formatarBR(hoje);
-        calendar.hidden = true;
-    });
+    const todayBtn = calendar.querySelector('.shc-calendar-today');
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => {
+            const hoje = new Date();
 
-    calendar.querySelector('.shc-calendar-clear').addEventListener('click', () => {
-        hiddenInput.value = '';
-        displaySpan.textContent = 'dd/mm/aaaa';
-        calendar.hidden = true;
-    });
+            mesAtual = hoje.getMonth();
+            anoAtual = hoje.getFullYear();
+
+            hiddenInput.value = formatarISO(hoje);
+            setDisplayValue(formatarBR(hoje));
+            calendar.hidden = true;
+            toggleError(trigger, false);
+        });
+    }
+
+    const clearBtn = calendar.querySelector('.shc-calendar-clear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            hiddenInput.value = '';
+            setDisplayValue('');
+            calendar.hidden = true;
+            toggleError(trigger, false);
+        });
+    }
 
     document.addEventListener('click', (e) => {
-        if (!wrapper.contains(e.target)) calendar.hidden = true;
+        if (!wrapper.contains(e.target)) {
+            calendar.hidden = true;
+        }
     });
 }
 ```
@@ -8055,18 +8213,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progressLabel) progressLabel.textContent = `${totalApp} / ${totalReq} Horas`;
 
                 if (breakdownContainer && progressData.horas_por_categoria) {
+                    breakdownContainer.innerHTML = '';
+
                     for (const [cat, hrs] of Object.entries(progressData.horas_por_categoria)) {
-                        let cPerc = Math.min((hrs / totalReq) * 100, 100);
-                        breakdownContainer.insertAdjacentHTML('beforeend', `
-                            <div class="area-progress" style="margin-bottom: 0;">
+                        const areaHTML = `
+                            <div class="area-progress" style="margin-bottom: 0.8rem;">
                                 <div class="area-label" style="font-size: 1.2rem;">
                                     <span>${cat}</span>
-                                    <span>${hrs}h (${cPerc.toFixed(1)}%)</span>
+                                    <span style="font-weight: 500;">${hrs}h</span>
                                 </div>
-                                <div class="mini-progress-bar" style="height: 0.4rem;">
-                                    <div class="mini-progress-bar-fill" style="width: ${cPerc}%;"></div>
+                                <div class="mini-progress-bar" style="height: 0.5rem;">
+                                    <div class="mini-progress-bar-fill" style="width: ${Math.min((hrs / totalReq) * 100, 100)}%;"></div>
                                 </div>
-                            </div>`);
+                            </div>`;
+                        breakdownContainer.insertAdjacentHTML('beforeend', areaHTML);
                     }
                 }
             }
@@ -8544,10 +8704,8 @@ document.addEventListener('DOMContentLoaded', () => {
     </style>
 </head>
 <body class="theme-default dotted-background">
-    <header class="header">
-        <div class="logo"><img src="logo.png" alt="Logo SHC" class="header-logo"></div>
-        <a href="#" id="manual-back-btn" class="logout-btn"><i class="fas fa-arrow-left"></i> Voltar</a>
-    </header>
+    
+    <header id="app-header" data-back-history="true"></header>
 
     <main class="main-container">
         <h1 class="page-title"><i class="fas fa-book"></i> Manual do Usuário</h1>
