@@ -238,6 +238,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function resetFileInput(fileInput, fileWrapper) {
+        fileInput.value = '';
+
+        const fileName = document.getElementById('file-name');
+        if (fileName) fileName.innerHTML = '';
+
+        const fileUploadText = fileWrapper.querySelector('.file-upload-text');
+        if (fileUploadText) fileUploadText.style.display = 'block';
+    }
+
+    function validarArquivoSelecionado(fileInput, fileWrapper) {
+        if (!fileInput || fileInput.files.length === 0) {
+            return true;
+        }
+
+        const arquivo = fileInput.files[0];
+
+        if (arquivo.size > MAX_FILE_SIZE_BYTES) {
+            resetFileInput(fileInput, fileWrapper);
+            toggleError(fileWrapper, true);
+            showToast(`O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB} MB.`, 'error');
+            return false;
+        }
+
+        if (arquivo.type !== 'application/pdf' && !arquivo.name.toLowerCase().endsWith('.pdf')) {
+            resetFileInput(fileInput, fileWrapper);
+            toggleError(fileWrapper, true);
+            showToast('Envie apenas arquivos em formato PDF.', 'error');
+            return false;
+        }
+
+        toggleError(fileWrapper, false);
+        return true;
+    }
+
     // =======================================================
     // 2. LÓGICA DE ENVIO DO FORMULÁRIO PARA A API
     // =======================================================
@@ -275,30 +310,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             hasError = true;
         }
 
-        if (fields.arquivo.files.length > 0) {
-            const arquivo = fields.arquivo.files[0];
-
-            if (arquivo.size > MAX_FILE_SIZE_BYTES) {
-                fields.arquivo.value = '';
-                document.getElementById('file-name').innerHTML = '';
-                const fileUploadText = fileWrapper.querySelector('.file-upload-text');
-                if (fileUploadText) fileUploadText.style.display = 'block';
-
-                toggleError(fileWrapper, true);
-                showToast(`O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB} MB.`, 'error');
-                return;
-            }
-
-            if (arquivo.type !== 'application/pdf' && !arquivo.name.toLowerCase().endsWith('.pdf')) {
-                fields.arquivo.value = '';
-                document.getElementById('file-name').innerHTML = '';
-                const fileUploadText = fileWrapper.querySelector('.file-upload-text');
-                if (fileUploadText) fileUploadText.style.display = 'block';
-
-                toggleError(fileWrapper, true);
-                showToast('Envie apenas arquivos em formato PDF.', 'error');
-                return;
-            }
+        if (!validarArquivoSelecionado(fields.arquivo, fileWrapper)) {
+            return;
         }
 
         if (hasError) {
@@ -378,8 +391,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const fileInputReal = document.getElementById('comprovante');
     const fileWrapper = form.querySelector('.file-upload-wrapper');
-    if(fileInputReal) {
-        fileInputReal.addEventListener('change', () => toggleError(fileWrapper, false));
+
+    if (fileInputReal) {
+        fileInputReal.addEventListener('change', () => {
+            validarArquivoSelecionado(fileInputReal, fileWrapper);
+        });
     }
     
     // Executa a busca de categorias e, se for edição, carrega os dados

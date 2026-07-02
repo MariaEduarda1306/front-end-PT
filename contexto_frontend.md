@@ -114,7 +114,7 @@ Este arquivo contém a estrutura e o código-fonte principal do frontend do proj
                         <input type="file" id="comprovante" name="comprovante" accept=".pdf" required>
                         <span class="file-upload-text">
                             <i class="fas fa-upload"></i>
-                            Clique para escolher o arquivo (somente .pdf)
+                            Clique para escolher o arquivo (PDF até 10 MB)
                         </span>
                         <span id="file-name"></span>
                     </label>
@@ -130,7 +130,7 @@ Este arquivo contém a estrutura e o código-fonte principal do frontend do proj
 
     <script src="js/utils.js"></script>
     <script src="js/components.js"></script>
-    <script src="js/cadastro-horas.js"></script>
+    <script src="js/cadastro-horas.js?v=2"></script>
 
 </body>
 </html>
@@ -3363,6 +3363,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const form = document.getElementById('cadastro-form');
     const submitButton = form.querySelector('button[type="submit"]');
+
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     
     // Captura o ID da URL se estiver em modo de edição
     const urlParams = new URLSearchParams(window.location.search);
@@ -3594,6 +3597,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function resetFileInput(fileInput, fileWrapper) {
+        fileInput.value = '';
+
+        const fileName = document.getElementById('file-name');
+        if (fileName) fileName.innerHTML = '';
+
+        const fileUploadText = fileWrapper.querySelector('.file-upload-text');
+        if (fileUploadText) fileUploadText.style.display = 'block';
+    }
+
+    function validarArquivoSelecionado(fileInput, fileWrapper) {
+        if (!fileInput || fileInput.files.length === 0) {
+            return true;
+        }
+
+        const arquivo = fileInput.files[0];
+
+        if (arquivo.size > MAX_FILE_SIZE_BYTES) {
+            resetFileInput(fileInput, fileWrapper);
+            toggleError(fileWrapper, true);
+            showToast(`O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB} MB.`, 'error');
+            return false;
+        }
+
+        if (arquivo.type !== 'application/pdf' && !arquivo.name.toLowerCase().endsWith('.pdf')) {
+            resetFileInput(fileInput, fileWrapper);
+            toggleError(fileWrapper, true);
+            showToast('Envie apenas arquivos em formato PDF.', 'error');
+            return false;
+        }
+
+        toggleError(fileWrapper, false);
+        return true;
+    }
+
     // =======================================================
     // 2. LÓGICA DE ENVIO DO FORMULÁRIO PARA A API
     // =======================================================
@@ -3629,6 +3667,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!editId && fields.arquivo.files.length === 0) {
             toggleError(fileWrapper, true);
             hasError = true;
+        }
+
+        if (!validarArquivoSelecionado(fields.arquivo, fileWrapper)) {
+            return;
         }
 
         if (hasError) {
@@ -3708,8 +3750,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const fileInputReal = document.getElementById('comprovante');
     const fileWrapper = form.querySelector('.file-upload-wrapper');
-    if(fileInputReal) {
-        fileInputReal.addEventListener('change', () => toggleError(fileWrapper, false));
+
+    if (fileInputReal) {
+        fileInputReal.addEventListener('change', () => {
+            validarArquivoSelecionado(fileInputReal, fileWrapper);
+        });
     }
     
     // Executa a busca de categorias e, se for edição, carrega os dados
